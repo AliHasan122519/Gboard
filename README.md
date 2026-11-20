@@ -33,8 +33,22 @@ Android IME (Kotlin, no third-party dependencies) with an Arabic and an English 
 # JDK 17+ and Android SDK (platform 35, build-tools 35.0.0); set sdk.dir in local.properties
 ./gradlew assembleDebug testDebugUnitTest
 # → app/build/outputs/apk/debug/app-debug.apk   (also copied to dist/MyKeyboard-debug.apk)
+# signed release for distribution: tools/make-keystore.sh once, then tools/release.sh
 ```
 التثبيت: ثبّت الـAPK ثم افتح التطبيق واتبع خطوتي «تفعيل لوحة المفاتيح» و«اختيارها».
+
+
+## التحديث التلقائي من داخل التطبيق / In-app updates
+- التطبيق يفحص **آخر إصدار منشور** في صفحة Releases للمستودع (`update_repo` في `app/src/main/res/values/config.xml`) مرة كل يوم في الخلفية (ويفحص عند فتح التطبيق)، ويرسل إشعارًا عند وجود نسخة أحدث، ويظهر شريط «يتوفر تحديث» داخل قائمة أدوات لوحة المفاتيح.
+- من بطاقة «تحديثات التطبيق» يضغط المستخدم «تنزيل وتثبيت»: يُنزَّل الـAPK ويُتحقق من **SHA-256** (إن وفّرته GitHub) ومن أن الحزمة هي نفس التطبيق **وموقّعة بنفس المفتاح**، ثم يعرض أندرويد نافذة تأكيد التثبيت (لا يوجد تثبيت صامت). يحتاج المستخدم مرة واحدة أن يسمح للتطبيق بتثبيت التحديثات.
+- الاتصال بالإنترنت يقتصر على github.com وعلى كود التحديث فقط؛ خدمة لوحة المفاتيح لا تستخدم الشبكة.
+
+### نشر تحديث (مرة واحدة للإعداد ثم ثلاث خطوات لكل تحديث)
+1. **مرة واحدة:** `tools/make-keystore.sh` ينشئ مفتاح التوقيع `release.jks` و`keystore.properties` (مستثنيان من git). **احتفظ بنسخة احتياطية آمنة**: أي تحديث لازم يُوقَّع بنفس المفتاح وإلا يرفضه أندرويد، وضياعه يعني أن يحذف المستخدمون التطبيق ويعيدوا تثبيته.
+2. ارفع `versionCode` و`versionName` في `app/build.gradle.kts` ثم شغّل `tools/release.sh` (يبني ويوقّع `MyKeyboard-<version>.apk`).
+3. في GitHub: **Releases ← Draft a new release** ← وسم `v<versionName>` ← أرفق ملف الـAPK ← **Publish release**. (الإصدارات المسودة والتجريبية pre-release تُتجاهل.)
+
+> النسخة المثبّتة حاليًا من `dist/` موقّعة بمفتاح debug مؤقت، لذا **لن تتحدث** من إصدار موقّع بمفتاحك. أول نسخة توزّعها على الناس يجب أن تكون النسخة الموقّعة بمفتاحك.
 
 ## الحدود المعروفة / Known limitations
 - لا يوجد اقتراح كلمات أو تصحيح تلقائي أو كتابة بالسحب.

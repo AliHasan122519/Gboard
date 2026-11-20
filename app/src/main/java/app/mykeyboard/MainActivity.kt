@@ -18,6 +18,13 @@ import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.ProgressBar
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
+import app.mykeyboard.update.CheckResult
+import app.mykeyboard.update.UpdateInfo
+import app.mykeyboard.update.UpdateManager
 
 /** Setup + settings screen. Fonts themselves are changed from the keyboard, not from here. */
 class MainActivity : Activity() {
@@ -26,10 +33,20 @@ class MainActivity : Activity() {
     private lateinit var step1Status: TextView
     private lateinit var step2Status: TextView
     private lateinit var content: LinearLayout
+    private lateinit var updater: UpdateManager
+    private val main = Handler(Looper.getMainLooper())
+    private lateinit var upStatus: TextView
+    private lateinit var upNotes: TextView
+    private lateinit var upProgress: ProgressBar
+    private lateinit var upCheck: TextView
+    private lateinit var upInstall: TextView
+    private var pending: UpdateInfo? = null
+    private var busy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
+        updater = UpdateManager(this)
         val night = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         p = if (night) Palette.DARK else Palette.LIGHT
 
@@ -46,7 +63,13 @@ class MainActivity : Activity() {
         build()
     }
 
-    override fun onResume() { super.onResume(); refreshStatus() }
+    override fun onResume() {
+        super.onResume(); refreshStatus()
+        pending = UpdateInfo.fromJson(prefs.availableUpdate)
+        if (pending != null && !busy) showAvailable(pending!!)
+        if (prefs.lastInstallError.isNotEmpty()) upStatus.text = getString(R.string.update_install_error, prefs.lastInstallError)
+        if (prefs.autoUpdate && !busy && System.currentTimeMillis() - prefs.lastUpdateCheck > 12L * 3600 * 1000) checkNow(false)
+    }
 
     private fun dp(v: Float) = Ui.dpi(this, v)
 
@@ -98,6 +121,8 @@ class MainActivity : Activity() {
         }
         card().also { c -> title(c, getString(R.string.tip_title)); body(c, getString(R.string.tip_body)) }
 
+        buildUpdateCard()
+
         card().also { c ->
             title(c, getString(R.string.settings_title))
             choice(c, getString(R.string.pref_theme), listOf("auto" to R.string.theme_auto, "dark" to R.string.theme_dark, "light" to R.string.theme_light),
@@ -123,6 +148,81 @@ class MainActivity : Activity() {
             body(c, names)
         }
         content.addView(View(this), Ui.lp(1, dp(24f)))
+    }
+
+    private fun buildUpdateCard() {
+        card().also { c ->
+            title(c, getString(R.string.update_title))
+            body(c, getString(R.string.update_current, updater.currentVersion))
+            upStatus = Ui.text(this, "", 14f, p.accent, Gravity.START).apply { setPadding(0, dp(4f), 0, dp(4f)) }
+            c.addView(upStatus)
+            upNotes = Ui.text(this, "", 13f, p.hint, Gravity.START).apply { visibility = View.GONE; setLineSpacing(0f, 1.15f) }
+            c.addView(upNotes)
+            upProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; visibility = View.GONE }
+            c.addView(upProgress, Ui.lp(Ui.MATCH, Ui.WRAP).apply { topMargin = dp(6f) })
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            upCheck = Ui.pill(this, getString(R.string.update_check), p.background, p.label, 14f)
+            Ui.pressable(upCheck, { if (!busy) checkNow(true) })
+            row.addView(upCheck, Ui.lp(Ui.WRAP, Ui.WRAP).apply { marginEnd = dp(8f) })
+            upInstall = Ui.pill(this, getString(R.string.update_install), p.accent, p.onAccent, 14f).apply { visibility = View.GONE }
+            Ui.pressable(upInstall, { pending?.let { if (!busy) installNow(it) } })
+            row.addView(upInstall)
+            c.addView(row, Ui.lp(Ui.WRAP, Ui.WRAP).apply { topMargin = dp(8f) })
+            toggle(c, getString(R.string.update_auto), getString(R.string.update_auto_desc), prefs.autoUpdate) { on ->
+                prefs.autoUpdate = on; updater.scheduleDaily()
+                if (on && android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 5)
+            }
+            body(c, getString(R.string.update_privacy))
+        }
+        updater.scheduleDaily()
+    }
+
+    private fun showAvailable(info: UpdateInfo) {
+        pending = info
+        upStatus.text = getString(R.string.update_available, info.version)
+        upNotes.text = info.notes; upNotes.visibility = if (info.notes.isEmpty()) View.GONE else View.VISIBLE
+        upInstall.visibility = View.VISIBLE
+    }
+
+    private fun checkNow(manual: Boolean) {
+        busy = true
+        if (manual) { upStatus.text = getString(R.string.update_checking); upInstall.visibility = View.GONE; upNotes.visibility = View.GONE }
+        Thread {
+            val r = updater.check()
+            main.post {
+                busy = false
+                when (r) {
+                    is CheckResult.Available -> showAvailable(r.info)
+                    is CheckResult.UpToDate -> if (manual) upStatus.text = getString(R.string.update_up_to_date, updater.currentVersion)
+                    is CheckResult.Failed -> if (manual) upStatus.text = getString(R.string.update_failed, r.reason)
+                }
+            }
+        }.start()
+    }
+
+    private fun installNow(info: UpdateInfo) {
+        if (!updater.canInstall()) {
+            upStatus.text = getString(R.string.update_allow_installs)
+            startActivity(updater.unknownSourcesIntent()); return
+        }
+        busy = true; upInstall.visibility = View.GONE; upCheck.visibility = View.GONE
+        upProgress.progress = 0; upProgress.visibility = View.VISIBLE
+        upStatus.text = getString(R.string.update_downloading, 0)
+        prefs.lastInstallError = ""
+        Thread {
+            val r = updater.download(info) { done, total ->
+                if (total > 0) main.post { val pct = (done * 100 / total).toInt(); upProgress.progress = pct; upStatus.text = getString(R.string.update_downloading, pct) }
+            }
+            main.post {
+                busy = false; upProgress.visibility = View.GONE; upCheck.visibility = View.VISIBLE
+                r.onSuccess { f ->
+                    upStatus.text = getString(R.string.update_confirm)
+                    runCatching { updater.install(f) }.onFailure { upStatus.text = getString(R.string.update_install_error, it.message ?: it.javaClass.simpleName); upInstall.visibility = View.VISIBLE }
+                }.onFailure {
+                    upStatus.text = getString(R.string.update_download_failed, it.message ?: it.javaClass.simpleName); upInstall.visibility = View.VISIBLE
+                }
+            }
+        }.start()
     }
 
     private fun choice(parent: LinearLayout, label: String, options: List<Pair<String, Int>>, get: () -> String, set: (String) -> Unit) {

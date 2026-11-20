@@ -81,4 +81,26 @@
     <string name="about_fonts">Included open-source fonts are under the SIL Open Font License 1.1 (license texts are in the app assets). Dubai and Marlik were supplied by you.</string>
     <string name="trial_note">Marlik Web TRIAL is a trial version from its foundry. Buy a full license before publishing the app.</string>
     <string name="dubai_note">Check that the license of the Dubai font allows embedding in an app before publishing.</string>
+
+    <!-- updates -->
+    <string name="update_title">App updates</string>
+    <string name="update_current">Installed version %s</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You have the latest version (%s)</string>
+    <string name="update_available">Version %s is available</string>
+    <string name="update_install">Download and install</string>
+    <string name="update_downloading">Downloading… %d%%</string>
+    <string name="update_failed">Could not check for updates (%s)</string>
+    <string name="update_download_failed">Download failed or the file did not pass verification (%s)</string>
+    <string name="update_allow_installs">Allow this app to install updates in the screen that opened, then come back and tap install again.</string>
+    <string name="update_confirm">Confirm the installation in the system dialog.</string>
+    <string name="update_install_error">Install failed: %s</string>
+    <string name="update_auto">Check for updates automatically</string>
+    <string name="update_auto_desc">Once a day. You are always asked before anything is installed.</string>
+    <string name="update_privacy">Update checks contact github.com only. The keyboard itself never uses the internet.</string>
+    <string name="update_channel">App updates</string>
+    <string name="update_available_title">Keyboard update available</string>
+    <string name="update_available_text">Version %s is ready to install</string>
+    <string name="menu_update">Update %s available</string>
 </resources>

@@ -363,6 +363,11 @@ class MenuPanel(context: Context, palette: Palette, private val prefs: Prefs, pr
     init {
         val c = context
         addView(header(c.getString(R.string.menu_title), host), ui.lp(ui.MATCH, ui.WRAP))
+        app.mykeyboard.update.UpdateInfo.fromJson(prefs.availableUpdate)?.let { u ->
+            val banner = ui.pill(c, c.getString(R.string.menu_update, u.version), palette.accent, palette.onAccent, 13f)
+            ui.pressable(banner, { host.openSettings() })
+            addView(banner, ui.lp(ui.WRAP, ui.WRAP).apply { setMargins(ui.dpi(c, 12f), ui.dpi(c, 4f), ui.dpi(c, 12f), 0) })
+        }
         val tiles = listOf(
             Triple(Icon.PALETTE, R.string.fonts_title) { host.openPanel(Tool.FONTS) },
             Triple(Icon.SMILEY, R.string.emoji_title) { host.openPanel(Tool.EMOJI) },
@@ -382,7 +387,7 @@ class MenuPanel(context: Context, palette: Palette, private val prefs: Prefs, pr
                 tile.addView(IconView(c, icon, palette.funcLabel), ui.lp(ui.dpi(c, 40f), ui.dpi(c, 40f)))
                 tile.addView(ui.text(c, c.getString(label), 13f, palette.label))
                 ui.pressable(tile, { action() })
-                row.addView(tile, ui.lp(0, ui.dpi(c, 82f), 1f).apply { setMargins(ui.dpi(c, 4f), ui.dpi(c, 4f), ui.dpi(c, 4f), ui.dpi(c, 4f)) })
+                row.addView(tile, ui.lp(0, ui.dpi(c, 76f), 1f).apply { setMargins(ui.dpi(c, 4f), ui.dpi(c, 3f), ui.dpi(c, 4f), ui.dpi(c, 3f)) })
             }
             grid.addView(row, ui.lp(ui.MATCH, ui.WRAP))
         }

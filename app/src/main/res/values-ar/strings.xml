@@ -81,4 +81,26 @@
     <string name="about_fonts">الخطوط المفتوحة المضمّنة مرخّصة برخصة SIL Open Font License 1.1 (نصوص التراخيص داخل ملفات التطبيق). خطا دبي ومارليك قدّمتهما أنت.</string>
     <string name="trial_note">خط Marlik Web TRIAL نسخة تجريبية من الشركة المصنّعة. اشترِ الترخيص الكامل قبل نشر التطبيق.</string>
     <string name="dubai_note">تأكد أن ترخيص خط دبي يسمح بتضمينه داخل تطبيق قبل النشر.</string>
+
+    <!-- updates -->
+    <string name="update_title">تحديثات التطبيق</string>
+    <string name="update_current">الإصدار المثبّت %s</string>
+    <string name="update_check">البحث عن تحديث</string>
+    <string name="update_checking">جارٍ البحث…</string>
+    <string name="update_up_to_date">لديك أحدث إصدار (%s)</string>
+    <string name="update_available">الإصدار %s متاح</string>
+    <string name="update_install">تنزيل وتثبيت</string>
+    <string name="update_downloading">جارٍ التنزيل… %d%%</string>
+    <string name="update_failed">تعذّر البحث عن تحديث (%s)</string>
+    <string name="update_download_failed">فشل التنزيل أو لم يجتز الملف التحقق (%s)</string>
+    <string name="update_allow_installs">اسمح لهذا التطبيق بتثبيت التحديثات في الشاشة التي فُتحت، ثم ارجع واضغط «تنزيل وتثبيت» مرة أخرى.</string>
+    <string name="update_confirm">أكّد التثبيت في نافذة النظام.</string>
+    <string name="update_install_error">فشل التثبيت: %s</string>
+    <string name="update_auto">البحث عن التحديثات تلقائيًا</string>
+    <string name="update_auto_desc">مرة كل يوم. يُطلب منك التأكيد دائمًا قبل تثبيت أي شيء.</string>
+    <string name="update_privacy">فحص التحديث يتصل بموقع github.com فقط، ولوحة المفاتيح نفسها لا تستخدم الإنترنت.</string>
+    <string name="update_channel">تحديثات التطبيق</string>
+    <string name="update_available_title">يتوفر تحديث للوحة المفاتيح</string>
+    <string name="update_available_text">الإصدار %s جاهز للتثبيت</string>
+    <string name="menu_update">يتوفر تحديث %s</string>
 </resources>

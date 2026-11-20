@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- GitHub repository whose latest published release carries the update APK -->
+    <string name="update_repo" translatable="false">AliHasan122519/Gboard</string>
+</resources>

@@ -59,6 +59,23 @@ class Prefs(context: Context) {
         get() = (sp.getString(K_FAVS, "") ?: "").split('\n').filter { it.isNotEmpty() }.toSet()
         set(v) = sp.edit().putString(K_FAVS, v.joinToString("\n")).apply()
 
+    var autoUpdate: Boolean
+        get() = sp.getBoolean(K_AUTO_UPDATE, true)
+        set(v) = sp.edit().putBoolean(K_AUTO_UPDATE, v).apply()
+
+    var lastUpdateCheck: Long
+        get() = sp.getLong(K_LAST_CHECK, 0L)
+        set(v) = sp.edit().putLong(K_LAST_CHECK, v).apply()
+
+    /** JSON of the newest release that is newer than the installed version, or null. */
+    var availableUpdate: String?
+        get() = sp.getString(K_AVAILABLE, null)
+        set(v) = sp.edit().putString(K_AVAILABLE, v).apply()
+
+    var lastInstallError: String
+        get() = sp.getString(K_INSTALL_ERR, "") ?: ""
+        set(v) = sp.edit().putString(K_INSTALL_ERR, v).apply()
+
     var clipboardHistory: Boolean
         get() = sp.getBoolean(K_CLIP, true)
         set(v) = sp.edit().putBoolean(K_CLIP, v).apply()
@@ -80,6 +97,10 @@ class Prefs(context: Context) {
         const val K_FONT = "font"
         const val K_WEIGHT = "weight"
         const val K_CLIP = "clip"
+        const val K_AUTO_UPDATE = "auto_update"
+        const val K_LAST_CHECK = "last_update_check"
+        const val K_AVAILABLE = "available_update"
+        const val K_INSTALL_ERR = "install_error"
         const val K_FILTER = "font_filter"
         const val K_FAVS = "font_favs"
         const val K_RECENT = "recent_emoji"

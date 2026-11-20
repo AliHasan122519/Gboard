@@ -45,6 +45,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         super.onCreate()
         prefs = Prefs(this); fonts = FontRepository(this); clip = ClipboardStore(this)
         lang = prefs.lang
+        runCatching { app.mykeyboard.update.UpdateManager(this).scheduleDaily() }   // local scheduling only, no network here
         prefs.sp.registerOnSharedPreferenceChangeListener(this)
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).addPrimaryClipChangedListener(clipListener)
     }
