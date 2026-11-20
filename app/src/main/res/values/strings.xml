@@ -106,4 +106,11 @@
     <string name="update_dialog_title">New update available</string>
     <string name="update_now">Update now</string>
     <string name="update_later">Later</string>
+    <string name="crash_title">The app stopped unexpectedly</string>
+    <string name="crash_body">Copy this report and send it to the developer so the problem can be fixed. Nothing was sent automatically.</string>
+    <string name="crash_copy">Copy report</string>
+    <string name="crash_share">Share</string>
+    <string name="crash_copied">Copied</string>
+    <string name="crash_show">Show report</string>
+    <string name="crash_dismiss">Dismiss</string>
 </resources>

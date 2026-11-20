@@ -59,7 +59,12 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     override fun onEvaluateFullscreenMode() = false
 
     // ------------------------------------------------------------------ view
-    override fun onCreateInputView(): View {
+    override fun onCreateInputView(): View = try { buildInputView() } catch (t: Throwable) {
+        CrashReporter.record(this, "KeyboardService.onCreateInputView", t)
+        android.widget.TextView(this).apply { text = "Keyboard error: ${t.javaClass.simpleName}"; setPadding(40, 40, 40, 40); setBackgroundColor(0xFF1C1E2A.toInt()); setTextColor(0xFFFF6B6B.toInt()) }
+    }
+
+    private fun buildInputView(): View {
         palette = Palette.resolve(this, prefs.theme)
         val keyboard = KeyboardView(this, prefs).also {
             it.listener = this
@@ -134,6 +139,10 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     // ------------------------------------------------------------------ input session
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        try { startInput(info) } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.onStartInputView", t) }
+    }
+
+    private fun startInput(info: EditorInfo) {
         closePanel()
         inputTypeFull = info.inputType
         val cls = info.inputType and InputType.TYPE_MASK_CLASS
@@ -181,6 +190,10 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
 
     // ------------------------------------------------------------------ keys
     override fun onKey(action: Action, text: String) {
+        try { handleKey(action, text) } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.onKey($action)", t) }
+    }
+
+    private fun handleKey(action: Action, text: String) {
         val ic = currentInputConnection
         when (action) {
             Action.TEXT, Action.COMMA, Action.PERIOD -> {

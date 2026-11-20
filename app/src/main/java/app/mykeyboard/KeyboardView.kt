@@ -109,8 +109,10 @@ class KeyboardView(
         c.drawColor(palette.background)
         drawToolbar(c)
         val ar = state.lang == "ar"
-        for (row in rows) for (k in row.keys) drawKey(c, k, ar)
-        drawPopups(c)
+        for (row in rows) for (k in row.keys) {
+            try { drawKey(c, k, ar) } catch (t: Throwable) { CrashReporter.record(context, "KeyboardView.drawKey('${k.label}')", t) }
+        }
+        try { drawPopups(c) } catch (t: Throwable) { CrashReporter.record(context, "KeyboardView.drawPopups", t) }
     }
 
     private fun toolCenters(): FloatArray {
@@ -384,7 +386,11 @@ class KeyboardView(
         p.selected = if (idx < p.alts.size) idx else p.alts.size - 1
     }
 
-    override fun onTouchEvent(e: MotionEvent): Boolean {
+    override fun onTouchEvent(e: MotionEvent): Boolean = try { handleTouch(e) } catch (t: Throwable) {
+        CrashReporter.record(context, "KeyboardView.onTouchEvent", t); cancelAll(); true
+    }
+
+    private fun handleTouch(e: MotionEvent): Boolean {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val i = e.actionIndex

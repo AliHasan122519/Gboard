@@ -60,11 +60,41 @@ class MainActivity : Activity() {
             v.setPadding(0, t, 0, b); insets
         }
         setContentView(scroll)
-        build()
+        try { build() } catch (t: Throwable) {
+            CrashReporter.record(this, "MainActivity.build", t)
+            content.addView(Ui.text(this, "Error: ${t.javaClass.simpleName}: ${t.message}", 14f, 0xFFFF6B6B.toInt(), Gravity.START).apply { setPadding(dp(20f), dp(40f), dp(20f), dp(20f)) })
+        }
+    }
+
+    /** One failing section must never take the whole screen down. */
+    private fun section(name: String, block: () -> Unit) {
+        try { block() } catch (t: Throwable) {
+            CrashReporter.record(this, "MainActivity.$name", t)
+            runCatching { body(card(), "⚠ $name: ${t.javaClass.simpleName}", 0xFFFF6B6B.toInt()) }
+        }
+    }
+
+    private fun buildErrorBanner() {
+        val f = CrashReporter.file(this)
+        if (!f.exists() || f.length() == 0L) return
+        card().also { c ->
+            title(c, getString(R.string.crash_title))
+            body(c, getString(R.string.crash_body))
+            button(c, getString(R.string.crash_show)) { startActivity(Intent(this, CrashActivity::class.java)) }
+            val dismiss = Ui.pill(this, getString(R.string.crash_dismiss), p.background, p.label, 14f)
+            Ui.pressable(dismiss, { f.delete(); recreate() })
+            c.addView(dismiss, Ui.lp(Ui.WRAP, Ui.WRAP).apply { topMargin = dp(8f) })
+        }
     }
 
     override fun onResume() {
-        super.onResume(); refreshStatus()
+        super.onResume()
+        try { resumeWork() } catch (t: Throwable) { CrashReporter.record(this, "MainActivity.onResume", t) }
+    }
+
+    private fun resumeWork() {
+        runCatching { refreshStatus() }
+        if (!::upStatus.isInitialized) return
         pending = UpdateInfo.fromJson(prefs.availableUpdate)
         if (pending != null && !busy) { showAvailable(pending!!); promptUpdate(pending!!) }
         if (prefs.lastInstallError.isNotEmpty()) upStatus.text = getString(R.string.update_install_error, prefs.lastInstallError)
@@ -113,19 +143,20 @@ class MainActivity : Activity() {
         head.addView(Ui.text(this, getString(R.string.main_subtitle), 15f, p.hint, Gravity.START).apply { setPadding(0, dp(4f), 0, 0) })
         content.addView(head)
 
-        card().also { c ->
+        buildErrorBanner()
+        section("setup1") { card().also { c ->
             title(c, getString(R.string.step1_title)); body(c, getString(R.string.step1_desc))
             step1Status = Ui.text(this, "", 13f, p.accent, Gravity.START); c.addView(step1Status)
             button(c, getString(R.string.step1_button)) { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
-        }
-        card().also { c ->
+        } }
+        section("setup2") { card().also { c ->
             title(c, getString(R.string.step2_title)); body(c, getString(R.string.step2_desc))
             step2Status = Ui.text(this, "", 13f, p.accent, Gravity.START); c.addView(step2Status)
             button(c, getString(R.string.step2_button)) {
                 (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
             }
-        }
-        card().also { c ->
+        } }
+        section("try") { card().also { c ->
             title(c, getString(R.string.try_hint))
             val et = EditText(this).apply {
                 setTextColor(p.label); setHintTextColor(p.hint); textSize = 18f; minLines = 2
@@ -133,12 +164,12 @@ class MainActivity : Activity() {
                 setPadding(dp(14f), dp(10f), dp(14f), dp(10f)); gravity = Gravity.TOP or Gravity.START
             }
             c.addView(et, Ui.lp(Ui.MATCH, Ui.WRAP).apply { topMargin = dp(8f) })
-        }
-        card().also { c -> title(c, getString(R.string.tip_title)); body(c, getString(R.string.tip_body)) }
+        } }
+        section("tip") { card().also { c -> title(c, getString(R.string.tip_title)); body(c, getString(R.string.tip_body)) } }
 
-        buildUpdateCard()
+        section("updates") { buildUpdateCard() }
 
-        card().also { c ->
+        section("settings") { card().also { c ->
             title(c, getString(R.string.settings_title))
             choice(c, getString(R.string.pref_theme), listOf("auto" to R.string.theme_auto, "dark" to R.string.theme_dark, "light" to R.string.theme_light),
                 { prefs.theme }, { prefs.theme = it })
@@ -151,9 +182,9 @@ class MainActivity : Activity() {
             toggle(c, getString(R.string.pref_digits), getString(R.string.pref_digits_desc), prefs.arabicDigits) { prefs.arabicDigits = it }
             toggle(c, getString(R.string.pref_autocap), null, prefs.autoCap) { prefs.autoCap = it }
             toggle(c, getString(R.string.pref_clipboard), getString(R.string.pref_clipboard_desc), prefs.clipboardHistory) { prefs.clipboardHistory = it }
-        }
+        } }
 
-        card().also { c ->
+        section("about") { card().also { c ->
             title(c, getString(R.string.about_title))
             body(c, getString(R.string.about_fonts))
             body(c, getString(R.string.trial_note), 0xFFE8A23B.toInt())
@@ -161,7 +192,7 @@ class MainActivity : Activity() {
             val arabicUi = resources.configuration.locales[0].language == "ar"
             val names = FontRepository(this).builtInFonts().joinToString("  •  ") { it.displayName(arabicUi) }
             body(c, names)
-        }
+        } }
         content.addView(View(this), Ui.lp(1, dp(24f)))
     }
 
@@ -184,12 +215,12 @@ class MainActivity : Activity() {
             row.addView(upInstall)
             c.addView(row, Ui.lp(Ui.WRAP, Ui.WRAP).apply { topMargin = dp(8f) })
             toggle(c, getString(R.string.update_auto), getString(R.string.update_auto_desc), prefs.autoUpdate) { on ->
-                prefs.autoUpdate = on; updater.scheduleDaily()
+                prefs.autoUpdate = on; runCatching { updater.scheduleDaily() }
                 if (on && android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 5)
             }
             body(c, getString(R.string.update_privacy))
         }
-        updater.scheduleDaily()
+        runCatching { updater.scheduleDaily() }
     }
 
     private fun showAvailable(info: UpdateInfo) {
@@ -284,6 +315,7 @@ class MainActivity : Activity() {
     }
 
     private fun refreshStatus() {
+        if (!::step1Status.isInitialized || !::step2Status.isInitialized) return
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val enabled = imm.enabledInputMethodList.any { it.packageName == packageName }
         val current = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)?.startsWith("$packageName/") == true
