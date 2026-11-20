@@ -68,10 +68,20 @@ class KeyboardView(
     private val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     // geometry (px)
-    val toolbarH get() = dp(TOOLBAR_DP)
-    private val keyH get() = dp(KEY_DP) * prefs.heightPercent / 100f
-    private val rowGap get() = dp(ROW_GAP_DP) * (0.6f + 0.4f * prefs.heightPercent / 100f)
-    private val bottomPad get() = dp(BOTTOM_PAD_DP)
+    /**
+     * Everything is proportional to the keyboard width, exactly like the reference design (1079 px wide:
+     * toolbar 157, keys 121, row gap 30, bottom padding 41), so the keyboard has the same proportions on every phone.
+     * In landscape the scale is capped so the keyboard never takes more than about half of the screen.
+     */
+    private val u: Float get() {
+        val w = (if (width > 0) width else resources.displayMetrics.widthPixels).toFloat()
+        val cap = resources.displayMetrics.heightPixels * 0.46f / 777f
+        return min(w / 1079f, cap)
+    }
+    val toolbarH get() = 157f * u
+    private val keyH get() = 121f * u * prefs.heightPercent / 100f
+    private val rowGap get() = 30f * u * (0.6f + 0.4f * prefs.heightPercent / 100f)
+    private val bottomPad get() = 41f * u
     var extraBottom = 0f
         set(v) { if (field != v) { field = v; requestLayout() } }
 
@@ -81,7 +91,23 @@ class KeyboardView(
     // ---- state setters ----
     fun setPalette(p: Palette) { palette = p; invalidate() }
     fun setTypeface(tf: Typeface) { typeface = tf; refCache.clear(); sizeCache.clear(); bottomCache.clear(); invalidate() }
-    fun setLayoutState(s: LayoutState) { state = s; rows = Layouts.rows(s); layoutKeys(); cancelAll(); invalidate() }
+    fun setLayoutState(s: LayoutState) {
+        val structural = s.lang != state.lang || s.page != state.page
+        val old = rows
+        state = s; rows = Layouts.rows(s); layoutKeys()
+        if (structural) cancelAll() else remapPointers(old)      // shift / enter-key refreshes keep fingers that are down alive
+        invalidate()
+    }
+
+    private fun remapPointers(old: List<Row>) {
+        for (i in 0 until pointers.size()) {
+            val p = pointers.valueAt(i); val k = p.key ?: continue
+            for (r in old.indices) {
+                val c = old[r].keys.indexOfFirst { it === k }
+                if (c >= 0) { p.key = rows.getOrNull(r)?.keys?.getOrNull(c) ?: k; break }
+            }
+        }
+    }
     fun setRtlUi(rtl: Boolean) { rtlUi = rtl; invalidate() }
     fun refreshGeometry() { requestLayout(); layoutKeys(); invalidate() }
 
@@ -107,6 +133,7 @@ class KeyboardView(
      * so every font fills the keys the same way and only the letter *shapes* differ.
      */
     private fun letterSize(arabic: Boolean, keyH: Float): Float {
+        val keyW = keyH * 83f / 121f * (if (arabic) 1f else 1.17f)      // key width at this height (English keys are wider)
         val key = "${if (arabic) "a" else "l"}|${keyH.toInt()}"
         return sizeCache.getOrPut(key) {
             val probe = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = this@KeyboardView.typeface; textSize = 100f }
@@ -114,9 +141,15 @@ class KeyboardView(
             probe.getTextBounds(ref, 0, ref.length, bounds)
             val h = (bounds.bottom - bounds.top).toFloat().coerceAtLeast(1f)
             val target = keyH * if (arabic) ALEF_H else CAP_H
-            val size = (target * 100f / h).coerceIn(keyH * 0.18f, keyH * 0.9f)
-            // where the reference glyph's bottom edge sits relative to the font baseline (some calligraphic fonts float the alef)
-            bottomCache[key] = bounds.bottom * size / 100f
+            var size = (target * 100f / h).coerceIn(keyH * 0.18f, keyH * 0.9f)
+            val bottom = bounds.bottom * size / 100f
+            // the widest letter of the font must stay inside its key (the reference's widest letter fills 85 % of a key)
+            val letters = if (arabic) "ضصثقفغعهخحجشسيبلاتنمكطذءؤرىةوزظد" else "mwMWQO"
+            var widest = 1f
+            for (ch in letters) { probe.getTextBounds(ch.toString(), 0, 1, bounds); widest = max(widest, (bounds.right - bounds.left).toFloat()) }
+            val maxW = keyW * 0.855f
+            if (widest * size / 100f > maxW) size = maxW * 100f / widest
+            bottomCache[key] = bottom * (size / ((target * 100f / h).coerceIn(keyH * 0.18f, keyH * 0.9f)))
             size
         }
     }
@@ -163,19 +196,19 @@ class KeyboardView(
     }
 
     private fun drawStrip(c: Canvas) {
-        val cy = dp(25.5f)
+        val cy = 67f * u
         val (l, r) = stripBounds()
         val st = status
         if (st != null) {
             // dictation: accent mic circle + live text
             fillPaint.color = palette.accent
-            c.drawCircle(l + dp(19.5f), cy, dp(19.5f), fillPaint)
-            Icons.draw(c, Icon.MIC, l + dp(19.5f), cy, dp(21f), palette.onAccent)
-            setText(dp(17f), palette.label, Paint.Align.LEFT)
-            val avail = r - l - dp(56f)
+            c.drawCircle(l + 51f * u, cy, 51f * u, fillPaint)
+            Icons.draw(c, Icon.MIC, l + 51f * u, cy, 52f * u, palette.onAccent)
+            setText(44f * u, palette.label, Paint.Align.LEFT)
+            val avail = r - l - 150f * u
             val shown = android.text.TextUtils.ellipsize(st, android.text.TextPaint(text), avail, android.text.TextUtils.TruncateAt.START).toString()
             text.textAlign = Paint.Align.LEFT
-            c.drawText(shown, l + dp(50f), baselineFor(text, cy, isLatin(shown)), text)
+            c.drawText(shown, l + 130f * u, baselineFor(text, cy, isLatin(shown)), text)
             return
         }
         val n = 3
@@ -184,22 +217,22 @@ class KeyboardView(
             val sug = suggestions.getOrNull(i) ?: continue
             val x0 = l + i * cw
             if (pressedStrip == i) {
-                tmpRect.set(x0 + dp(3f), dp(6f), x0 + cw - dp(3f), dp(45f))
-                fillPaint.color = palette.keyPressed; c.drawRoundRect(tmpRect, dp(12f), dp(12f), fillPaint)
+                tmpRect.set(x0 + 8f * u, 16f * u, x0 + cw - 8f * u, 118f * u)
+                fillPaint.color = palette.keyPressed; c.drawRoundRect(tmpRect, 30f * u, 30f * u, fillPaint)
             }
             setText(letterSize(!isLatin(sug), keyH) * 0.75f, if (i == 0) palette.label else palette.hint, face = typeface)
-            val fit = android.text.TextUtils.ellipsize(sug, android.text.TextPaint(text), cw - dp(14f), android.text.TextUtils.TruncateAt.END).toString()
+            val fit = android.text.TextUtils.ellipsize(sug, android.text.TextPaint(text), cw - 36f * u, android.text.TextUtils.TruncateAt.END).toString()
             c.drawText(fit, x0 + cw / 2f, baselineFor(text, cy, isLatin(fit)), text)
             if (i < n - 1 && suggestions.size > i + 1) {
                 fillPaint.color = palette.divider
-                c.drawRect(x0 + cw - dp(0.5f), dp(14f), x0 + cw + dp(0.5f), dp(37f), fillPaint)
+                c.drawRect(x0 + cw - 1.5f * u, 36f * u, x0 + cw + 1.5f * u, 98f * u, fillPaint)
             }
         }
     }
 
     private fun drawToolbar(c: Canvas) {
         if (status != null || suggestions.isNotEmpty()) { drawStrip(c); return }
-        val cy = dp(25.5f)
+        val cy = 67f * u
         val xs = toolCenters()
         val icons = arrayOf(Icon.MIC, Icon.GEAR, Icon.PALETTE, Icon.CLIPBOARD, Icon.STICKER, Icon.GRID)
         val tools = Tool.values()
@@ -208,9 +241,9 @@ class KeyboardView(
             val active = activeTool == tools[i]
             if (i == 0 || active || pressedTool) {
                 fillPaint.color = if (active) palette.funcKey else if (pressedTool) palette.keyPressed else palette.key
-                c.drawCircle(xs[i], cy, dp(19.5f), fillPaint)
+                c.drawCircle(xs[i], cy, 51f * u, fillPaint)
             }
-            Icons.draw(c, icons[i], xs[i], cy, dp(if (i == 0) 21f else 23f), if (active) palette.funcLabel else palette.label)
+            Icons.draw(c, icons[i], xs[i], cy, (if (i == 0) 52f else 58f) * u, if (active) palette.funcLabel else palette.label)
         }
     }
 
@@ -430,10 +463,10 @@ class KeyboardView(
         override fun run() {
             val p = pointers.get(id) ?: return
             if (!p.repeating) return
-            if (n >= WORD_AFTER) listener?.onLongAction(Action.BACKSPACE) else listener?.onKey(Action.BACKSPACE, "")
+            if (n >= WORD_AFTER) listener?.onLongAction(Action.BACKSPACE) else listener?.onKey(Action.BACKSPACE, "hold")
             if (prefs.haptic && n % 3 == 0) feedbackLight()
             n++
-            handler.postDelayed(this, if (n >= WORD_AFTER) 120L else if (n < 8) 55L else 32L)
+            handler.postDelayed(this, if (n >= WORD_AFTER) 90L else if (n < 6) 45L else 26L)
         }
     }
 
@@ -574,6 +607,6 @@ class KeyboardView(
         const val BOTTOM_PAD_DP = 14f
         const val LONG_PRESS_MS = 380L
         const val REPEAT_DELAY = 380L
-        const val WORD_AFTER = 30
+        const val WORD_AFTER = 26
     }
 }

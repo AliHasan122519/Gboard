@@ -93,6 +93,11 @@ class Prefs(context: Context) {
         get() = sp.getInt(K_IMG_PRESET, 0).coerceIn(0, 3)
         set(v) = sp.edit().putInt(K_IMG_PRESET, v).apply()
 
+    /** When on, Enter in an app that accepts images sends the message as a picture drawn in the chosen font. */
+    open var imageSend: Boolean
+        get() = sp.getBoolean(K_IMAGE_SEND, false)
+        set(v) = sp.edit().putBoolean(K_IMAGE_SEND, v).apply()
+
     var clipboardHistory: Boolean
         get() = sp.getBoolean(K_CLIP, true)
         set(v) = sp.edit().putBoolean(K_CLIP, v).apply()
@@ -114,6 +119,9 @@ class Prefs(context: Context) {
         const val K_FONT = "font"
         const val K_WEIGHT = "weight"
         const val K_CLIP = "clip"
+        const val K_IMAGE_SEND = "image_send"
+        const val K_VOICE_TEXT = "voice_text"
+        const val K_VOICE_TS = "voice_ts"
         const val K_SUGGEST = "suggestions"
         const val K_AUTOCORRECT = "autocorrect"
         const val K_STYLE = "text_style"

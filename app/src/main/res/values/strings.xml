@@ -145,4 +145,7 @@
     <string name="about_dict">Word lists derived from FrequencyWords by Hermit Dave (OpenSubtitles), licence CC BY-SA 4.0. Learned words are stored only on this device. Voice typing sends audio to the device speech service (usually Google).</string>
     <string name="update_banner_title">New version %s is available</string>
     <string name="update_retry">Try again</string>
+    <string name="voice_prompt">Speak now</string>
+    <string name="img_auto">Send as picture when I press Enter</string>
+    <string name="img_auto_desc">The other person sees your message exactly in your font, as a picture. Works in apps that accept images from the keyboard.</string>
 </resources>

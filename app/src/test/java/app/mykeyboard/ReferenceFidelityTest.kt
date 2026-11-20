@@ -54,7 +54,8 @@ class ReferenceFidelityTest {
                 val (b, rows) = render(f.id)
                 val g = glyph(b, rows[1].keys[5])!!               // "ا"
                 report.append(String.format("%-14s alef height %.3f (ref 0.405)  bottom %.3f (ref 0.727)\n", f.id, g.third, g.second))
-                assertEquals("${f.id} alef height", 49f / 121f, g.third, 0.03f)
+                // wide fonts are shrunk on purpose so their letters never touch the neighbouring key, never enlarged past the reference
+                assertTrue("${f.id} alef height ${g.third}", g.third <= 49f / 121f + 0.02f && g.third >= 0.26f)
                 assertEquals("${f.id} baseline", 88f / 121f, g.second, 0.03f)
             } else {
                 val (b, rows) = render(f.id, "en", Shift.ON)
@@ -76,5 +77,19 @@ class ReferenceFidelityTest {
             assertEquals("bottom row pixel differs at $x,$y (${k.action})", a.getPixel(x, y), c.getPixel(x, y))
         // toolbar icons too
         for (y in 0 until rowsA[0].keys[0].y.toInt() - 5) for (x in 0 until a.width) assertEquals(a.getPixel(x, y), c.getPixel(x, y))
+    }
+
+    /** No letter of any font may touch the next key: ink in the gaps between keys means overlapping letters. */
+    @Test fun noLetterSpillsOutOfItsKeyInAnyFont() {
+        for (f in FontRepository(ctx).builtInFonts().filter { it.hasArabic }) {
+            val (b, rows) = render(f.id)
+            for (r in 0..2) for (i in 0 until rows[r].keys.size - 1) {
+                val k = rows[r].keys[i]; val n = rows[r].keys[i + 1]
+                for (x in (k.x + k.w).toInt() + 1 until n.x.toInt()) for (y in k.y.toInt() + 4 until (k.y + k.h).toInt() - 4) {
+                    val p = b.getPixel(x, y)
+                    assertTrue("${f.id}: letter spills between '${k.label}' and '${n.label}' at $x,$y", Color.red(p) < 120)
+                }
+            }
+        }
     }
 }

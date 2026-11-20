@@ -59,7 +59,8 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     private var lastCorrection: Correction? = null
     private var lastBoundary = ""
     private var styleList: List<TextStyle>? = null
-    private lateinit var voice: VoiceInput
+    private var pendingVoice: String? = null
+    private var imageCapable = false
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshTask = Runnable { refreshSuggestions() }
     /** While deleting fast, suggestions are refreshed once the burst settles instead of on every character. */
@@ -71,12 +72,6 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         super.onCreate()
         prefs = Prefs(this); fonts = FontRepository(this); clip = ClipboardStore(this)
         lang = prefs.lang
-        voice = VoiceInput(this, object : VoiceInput.Callback {
-            override fun onPartial(text: String) { kv?.setStatus(text); currentInputConnection?.setComposingText(styled(text), 1) }
-            override fun onFinal(text: String) { currentInputConnection?.commitText(styled(text) + " ", 1); refreshSuggestions() }
-            override fun onState(listening: Boolean) { kv?.setStatus(if (listening) getString(R.string.voice_listening) else null) }
-            override fun onError(messageRes: Int) { currentInputConnection?.finishComposingText(); if (messageRes != 0) toast(messageRes) }
-        })
         loadDictionaries()
         runCatching { app.mykeyboard.update.UpdateManager(this).scheduleDaily() }   // local scheduling only, no network here
         prefs.sp.registerOnSharedPreferenceChangeListener(this)
@@ -84,7 +79,6 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     }
 
     override fun onDestroy() {
-        runCatching { voice.cancel() }
         prefs.sp.unregisterOnSharedPreferenceChangeListener(this)
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(clipListener)
         super.onDestroy()
@@ -160,7 +154,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
             Prefs.K_THEME -> applyTheme()
             Prefs.K_HEIGHT -> { kv?.refreshGeometry(); updatePanelMargin() }
             Prefs.K_DIGITS -> applyLayout()
-            Prefs.K_MIC_GRANT -> startVoice()
+            Prefs.K_VOICE_TS -> { pendingVoice = prefs.sp.getString(Prefs.K_VOICE_TEXT, null); commitPendingVoice() }
             Prefs.K_SUGGEST, Prefs.K_AUTOCORRECT, Prefs.K_STYLE -> refreshSuggestions()
             FONT_LIST_VERSION -> fontPanel?.refresh()
         }
@@ -207,14 +201,17 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         }
         suggestOk = !(passwordField || latinOnlyField || numeric || info.inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0)
         lastCorrection = null
+        imageCapable = info.contentMimeTypes?.any { it == "image/png" || it == "image/*" } == true
+        if (prefs.imageSend && imageCapable) enterKind = EnterKind.SEND          // the send key shows it will send a picture
         updateAutoCap()
         applyLayout()
         refreshSuggestions()
+        if (pendingVoice == null) pendingVoice = prefs.sp.getString(Prefs.K_VOICE_TEXT, null)
+        if (pendingVoice != null) Handler(Looper.getMainLooper()).postDelayed({ commitPendingVoice() }, 250)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
-        runCatching { voice.cancel() }
         kv?.setSuggestions(emptyList())
     }
 
@@ -287,10 +284,22 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         val e = engine
         currentSuggestions = if (e == null || !assistOn()) emptyList()
         else e.suggest(currentInputConnection?.getTextBeforeCursor(40, 0) ?: "", lang)
-        if (!voice.listening) kv?.setSuggestions(currentSuggestions)
+        kv?.setSuggestions(currentSuggestions)
     }
 
+    /** One cheap round-trip per character while the delete key is held; the rest is settled once the burst ends. */
+    private fun fastDelete() {
+        val ic = currentInputConnection ?: return
+        lastCorrection = null
+        if (!ic.deleteSurroundingTextInCodePoints(1, 0)) ic.deleteSurroundingText(1, 0)
+        scheduleSettle()
+    }
+
+    private val settleTask = Runnable { updateAutoCap(); applyLayout(); refreshSuggestions() }
+    private fun scheduleSettle() { refreshHandler.removeCallbacks(settleTask); refreshHandler.postDelayed(settleTask, 90) }
+
     private fun handleKey(action: Action, text: String) {
+        if (action == Action.BACKSPACE && text == "hold") { fastDelete(); return }
         val ic = currentInputConnection
         if (action != Action.BACKSPACE) lastCorrection = null
         val boundary = isBoundary(action, text)
@@ -342,11 +351,11 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.onSuggestion", t) }
     }
 
-    override fun onStatusTap() { voice.stop() }
+    override fun onStatusTap() {}
 
     override fun onLongAction(action: Action) {
         when (action) {
-            Action.BACKSPACE -> { deleteWord(); updateAutoCap(); applyLayout(); scheduleRefresh() }
+            Action.BACKSPACE -> { deleteWord(); scheduleSettle() }
             Action.SPACE, Action.LANG -> showImePicker()
             Action.COMMA -> openPanel(Tool.EMOJI)
             else -> {}
@@ -363,6 +372,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
 
     private fun sendEnter() {
         val ic = currentInputConnection ?: return
+        if (prefs.imageSend && imageCapable) { sendTextAsImage(); return }
         if (enterKind == EnterKind.ENTER) { sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER); return }
         val action = currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
         ic.performEditorAction(action)
@@ -437,14 +447,19 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     }
 
     private fun startVoice() {
-        if (voice.listening) { voice.stop(); return }
-        if (!voice.available()) { legacyVoiceIme(); return }
-        if (!voice.hasPermission()) {
-            startActivity(Intent(this, MicPermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            return
-        }
-        closePanel()
-        voice.start(lang)
+        val probe = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        if (packageManager.resolveActivity(probe, 0) == null) { legacyVoiceIme(); return }
+        startActivity(Intent(this, VoiceDialogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("lang", lang))
+    }
+
+    /** The speech dialog returns after the text field restarts, so the text waits here until the keyboard is active again. */
+    private fun commitPendingVoice() {
+        val t = pendingVoice ?: return
+        val ic = currentInputConnection ?: return
+        ic.commitText(styled(t) + " ", 1)
+        pendingVoice = null
+        prefs.sp.edit().remove(Prefs.K_VOICE_TEXT).apply()
+        refreshSuggestions()
     }
 
     /** No speech service on the device: hand over to another keyboard's voice mode if one is enabled. */

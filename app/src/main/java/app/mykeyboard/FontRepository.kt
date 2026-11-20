@@ -147,7 +147,7 @@ class FontRepository(private val context: Context) {
     }
 
     companion object {
-        const val DEFAULT_ID = "dubai"
+        const val DEFAULT_ID = "noto_sans"
         const val MAX_FONT_BYTES = 40L * 1024 * 1024
         val EXT = setOf("ttf", "otf")
 

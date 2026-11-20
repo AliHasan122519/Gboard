@@ -427,6 +427,14 @@ class StylePanel(
     private fun render() {
         val c = context
         body.removeAllViews()
+        // --- 0. automatic mode: Enter sends the message as a picture in the chosen font
+        val auto = ui.text(c, (if (prefs.imageSend) "✓  " else "") + c.getString(R.string.img_auto), 15f, if (prefs.imageSend) palette.onAccent else palette.label).apply {
+            background = ui.round(if (prefs.imageSend) palette.accent else palette.key, ui.dp(c, 14f))
+            setPadding(ui.dpi(c, 12f), 0, ui.dpi(c, 12f), 0)
+        }
+        ui.pressable(auto, { prefs.imageSend = !prefs.imageSend; host.styleChanged(); render() })
+        body.addView(auto, ui.lp(ui.MATCH, ui.dpi(c, 48f)).apply { topMargin = ui.dpi(c, 4f) })
+        body.addView(label(c.getString(R.string.img_auto_desc)))
         // --- 1. send as image (the real font shows up in chats)
         body.addView(label(c.getString(R.string.img_title), palette.label, 15f))
         body.addView(label(c.getString(R.string.img_desc)))
