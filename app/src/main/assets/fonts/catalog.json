@@ -1,0 +1,478 @@
+[
+ {
+  "id": "dubai",
+  "nameAr": "دبي",
+  "nameEn": "Dubai",
+  "group": "arabic",
+  "file": "fonts/dubai.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "user-supplied"
+ },
+ {
+  "id": "marlik",
+  "nameAr": "مارليك",
+  "nameEn": "Marlik",
+  "group": "arabic",
+  "file": "fonts/marlik_400.ttf",
+  "variable": false,
+  "wght": [
+   100,
+   400,
+   900
+  ],
+  "weights": {
+   "100": "fonts/marlik_100.ttf",
+   "200": "fonts/marlik_200.ttf",
+   "300": "fonts/marlik_300.ttf",
+   "400": "fonts/marlik_400.ttf",
+   "500": "fonts/marlik_500.ttf",
+   "600": "fonts/marlik_600.ttf",
+   "700": "fonts/marlik_700.ttf",
+   "800": "fonts/marlik_800.ttf",
+   "900": "fonts/marlik_900.ttf"
+  },
+  "arabic": true,
+  "license": "trial-user-supplied"
+ },
+ {
+  "id": "cairo",
+  "nameAr": "القاهرة",
+  "nameEn": "Cairo",
+  "group": "arabic",
+  "file": "fonts/cairo.ttf",
+  "variable": true,
+  "wght": [
+   200.0,
+   400.0,
+   1000.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "tajawal",
+  "nameAr": "تجوّل",
+  "nameEn": "Tajawal",
+  "group": "arabic",
+  "file": "fonts/tajawal.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "almarai",
+  "nameAr": "المراعي",
+  "nameEn": "Almarai",
+  "group": "arabic",
+  "file": "fonts/almarai.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "noto_sans",
+  "nameAr": "نوتو سانس عربي",
+  "nameEn": "Noto Sans Arabic",
+  "group": "arabic",
+  "file": "fonts/noto_sans.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "noto_kufi",
+  "nameAr": "نوتو كوفي",
+  "nameEn": "Noto Kufi Arabic",
+  "group": "kufi",
+  "file": "fonts/noto_kufi.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "noto_naskh",
+  "nameAr": "نوتو نسخ",
+  "nameEn": "Noto Naskh Arabic",
+  "group": "naskh",
+  "file": "fonts/noto_naskh.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "readex",
+  "nameAr": "ريديكس برو",
+  "nameEn": "Readex Pro",
+  "group": "arabic",
+  "file": "fonts/readex.ttf",
+  "variable": true,
+  "wght": [
+   160.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "plex",
+  "nameAr": "آي بي إم بلكس",
+  "nameEn": "IBM Plex Sans Arabic",
+  "group": "arabic",
+  "file": "fonts/plex.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "alexandria",
+  "nameAr": "الإسكندرية",
+  "nameEn": "Alexandria",
+  "group": "arabic",
+  "file": "fonts/alexandria.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "vazirmatn",
+  "nameAr": "وزير",
+  "nameEn": "Vazirmatn",
+  "group": "arabic",
+  "file": "fonts/vazirmatn.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "changa",
+  "nameAr": "چنجا",
+  "nameEn": "Changa",
+  "group": "arabic",
+  "file": "fonts/changa.ttf",
+  "variable": true,
+  "wght": [
+   200.0,
+   400.0,
+   800.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "mada",
+  "nameAr": "مدى",
+  "nameEn": "Mada",
+  "group": "arabic",
+  "file": "fonts/mada.ttf",
+  "variable": true,
+  "wght": [
+   200.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "rubik",
+  "nameAr": "روبيك",
+  "nameEn": "Rubik",
+  "group": "arabic",
+  "file": "fonts/rubik.ttf",
+  "variable": true,
+  "wght": [
+   300.0,
+   300.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "elmessiri",
+  "nameAr": "المسيري",
+  "nameEn": "El Messiri",
+  "group": "arabic",
+  "file": "fonts/elmessiri.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "reemkufi",
+  "nameAr": "ريم كوفي",
+  "nameEn": "Reem Kufi",
+  "group": "kufi",
+  "file": "fonts/reemkufi.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "kufam",
+  "nameAr": "كوفام",
+  "nameEn": "Kufam",
+  "group": "kufi",
+  "file": "fonts/kufam.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   900.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "baloo",
+  "nameAr": "بالو بحجان",
+  "nameEn": "Baloo Bhaijaan 2",
+  "group": "fun",
+  "file": "fonts/baloo.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   800.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "lemonada",
+  "nameAr": "ليمونادا",
+  "nameEn": "Lemonada",
+  "group": "fun",
+  "file": "fonts/lemonada.ttf",
+  "variable": true,
+  "wght": [
+   300.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "playpen",
+  "nameAr": "بلاي بن",
+  "nameEn": "Playpen Sans Arabic",
+  "group": "fun",
+  "file": "fonts/playpen.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   800.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "amiri",
+  "nameAr": "أميري",
+  "nameEn": "Amiri",
+  "group": "naskh",
+  "file": "fonts/amiri.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "scheherazade",
+  "nameAr": "شهرزاد",
+  "nameEn": "Scheherazade New",
+  "group": "naskh",
+  "file": "fonts/scheherazade.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "lateef",
+  "nameAr": "لطيف",
+  "nameEn": "Lateef",
+  "group": "naskh",
+  "file": "fonts/lateef.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "harmattan",
+  "nameAr": "هرمتان",
+  "nameEn": "Harmattan",
+  "group": "naskh",
+  "file": "fonts/harmattan.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "markazi",
+  "nameAr": "مركزي",
+  "nameEn": "Markazi Text",
+  "group": "naskh",
+  "file": "fonts/markazi.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "arefruqaa",
+  "nameAr": "عارف رقعة",
+  "nameEn": "Aref Ruqaa",
+  "group": "calligraphy",
+  "file": "fonts/arefruqaa.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "lalezar",
+  "nameAr": "لاله‌زار",
+  "nameEn": "Lalezar",
+  "group": "display",
+  "file": "fonts/lalezar.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "rakkas",
+  "nameAr": "رقّاص",
+  "nameEn": "Rakkas",
+  "group": "display",
+  "file": "fonts/rakkas.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "zain",
+  "nameAr": "زين",
+  "nameEn": "Zain",
+  "group": "display",
+  "file": "fonts/zain.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "katibeh",
+  "nameAr": "كاتبة",
+  "nameEn": "Katibeh",
+  "group": "calligraphy",
+  "file": "fonts/katibeh.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "blaka",
+  "nameAr": "بلاكا",
+  "nameEn": "Blaka",
+  "group": "display",
+  "file": "fonts/blaka.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "inter",
+  "nameAr": "إنتر",
+  "nameEn": "Inter",
+  "group": "latin",
+  "file": "fonts/inter.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
+  ],
+  "arabic": false,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "poppins",
+  "nameAr": "بوبينز",
+  "nameEn": "Poppins",
+  "group": "latin",
+  "file": "fonts/poppins.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": false,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "spacegrotesk",
+  "nameAr": "سبيس غروتيسك",
+  "nameEn": "Space Grotesk",
+  "group": "latin",
+  "file": "fonts/spacegrotesk.ttf",
+  "variable": true,
+  "wght": [
+   300.0,
+   300.0,
+   700.0
+  ],
+  "arabic": false,
+  "license": "OFL-1.1"
+ }
+]
