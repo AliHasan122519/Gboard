@@ -11,13 +11,20 @@ Android IME (Kotlin, no third-party dependencies) with an Arabic and an English 
 - الحافظة (سجل + تثبيت، محلي فقط)، الإيموجي، قائمة الأدوات، تبديل المظهر (نظام / داكن / فاتح)، الاهتزاز والصوت، ارتفاع المفاتيح.
 - حقول كلمات المرور/البريد/الروابط تتحول للإنجليزية تلقائيًا، وحقول الأرقام تفتح صفحة الأرقام.
 
-## الخطوط المضمّنة / Bundled fonts (35)
-| المصدر | الخطوط |
-|---|---|
-| قدّمتها أنت | **Dubai** (Bold)، **Marlik** (9 أوزان – نسخة TRIAL) |
-| SIL OFL 1.1 (Google Fonts) | Cairo, Tajawal, Almarai, Noto Sans/Kufi/Naskh Arabic, Readex Pro, IBM Plex Sans Arabic, Alexandria, Vazirmatn, Changa, Mada, Rubik, El Messiri, Reem Kufi, Kufam, Baloo Bhaijaan 2, Lemonada, Playpen Sans Arabic, Amiri, Scheherazade New, Lateef, Harmattan, Markazi Text, Aref Ruqaa, Lalezar, Rakkas, Zain, Katibeh, Blaka, Inter, Poppins, Space Grotesk |
+## مكتبة الخطوط (35 خطًا) / Font library
+تُعرض في لوحة الخطوط مرتبة بتصنيفات يمكن التصفية بها من شريط الأزرار أعلى اللوحة: **الكل · المفضلة ★ · خطوطي · عصرية · كوفي · نسخ · رقعة وخط يد · عناوين وزخرفة · مرحة · إنجليزية فقط**. اضغط ☆ على أي خط لإضافته إلى المفضلة.
 
-نصوص تراخيص OFL في `app/src/main/assets/fonts/licenses/`. قائمة الخطوط في `app/src/main/assets/fonts/catalog.json` — أضف خطًا جديدًا بنسخ الملف وإضافة سطر هناك.
+| التصنيف | الخطوط |
+|---|---|
+| عصرية | **Dubai** (خطك)، Cairo, Tajawal, Almarai, Noto Sans Arabic, Readex Pro, IBM Plex Sans Arabic, Alexandria, Vazirmatn, Changa, Mada, Rubik, El Messiri, Zain |
+| كوفي | Noto Kufi Arabic, Reem Kufi, Kufam |
+| نسخ | **Marlik** (خطك، 9 أوزان – TRIAL)، Noto Naskh Arabic, Amiri, Scheherazade New, Lateef, Harmattan, Markazi Text |
+| رقعة وخط يد | Aref Ruqaa, Katibeh |
+| عناوين وزخرفة | Lalezar, Rakkas, Blaka |
+| مرحة | Baloo Bhaijaan 2, Lemonada, Playpen Sans Arabic |
+| إنجليزية فقط | Inter, Poppins, Space Grotesk |
+
+الخطوط غير المذكورة بأنها «خطك» مرخّصة SIL OFL 1.1 (من Google Fonts). نصوص تراخيص OFL في `app/src/main/assets/fonts/licenses/`. قائمة الخطوط في `app/src/main/assets/fonts/catalog.json` — أضف خطًا جديدًا بنسخ الملف وإضافة سطر هناك.
 
 > ⚠️ **تراخيص**: *Marlik Web TRIAL* نسخة تجريبية من Rosetta ويلزم ترخيص كامل قبل النشر. تأكد كذلك أن ترخيص خط **Dubai** يسمح بتضمينه في تطبيق.
 

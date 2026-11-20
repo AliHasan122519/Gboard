@@ -9,7 +9,7 @@ import kotlin.math.sin
 
 enum class Icon {
     MIC, GEAR, PALETTE, CLIPBOARD, STICKER, GRID, GLOBE, BACKSPACE, SHIFT, SHIFT_FILLED, SHIFT_LOCK,
-    ENTER, SEARCH, SEND, CHECK, ARROW_NEXT, SMILEY, BACK, CLOSE, PLUS, PIN, KEYBOARD, MOON, TRASH, ARROW_BACK_LABEL
+    ENTER, SEARCH, SEND, CHECK, ARROW_NEXT, SMILEY, BACK, CLOSE, PLUS, PIN, KEYBOARD, MOON, TRASH, ARROW_BACK_LABEL, STAR, STAR_FILLED
 }
 
 /** Vector icons drawn directly on a Canvas, original geometry in a unit square centred on (cx, cy). */
@@ -221,6 +221,18 @@ object Icons {
                 c.drawPath(path, paint)
             }
             Icon.ARROW_BACK_LABEL -> {}
+            Icon.STAR, Icon.STAR_FILLED -> {
+                path.reset()
+                for (i in 0 until 10) {
+                    val r = if (i % 2 == 0) 0.46f * s else 0.19f * s
+                    val a = Math.toRadians(-90.0 + i * 36.0)
+                    val x = (r * cos(a)).toFloat(); val y = (r * sin(a)).toFloat() + 0.02f * s
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                if (icon == Icon.STAR) stroke(sw, color) else fill(color)
+                c.drawPath(path, paint)
+            }
             Icon.CLOSE -> {
                 stroke(sw * 1.2f, color)
                 c.drawLine(-0.30f * s, -0.30f * s, 0.30f * s, 0.30f * s, paint)

@@ -3,7 +3,7 @@
   "id": "dubai",
   "nameAr": "دبي",
   "nameEn": "Dubai",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/dubai.ttf",
   "variable": false,
   "wght": null,
@@ -11,36 +11,10 @@
   "license": "user-supplied"
  },
  {
-  "id": "marlik",
-  "nameAr": "مارليك",
-  "nameEn": "Marlik",
-  "group": "arabic",
-  "file": "fonts/marlik_400.ttf",
-  "variable": false,
-  "wght": [
-   100,
-   400,
-   900
-  ],
-  "weights": {
-   "100": "fonts/marlik_100.ttf",
-   "200": "fonts/marlik_200.ttf",
-   "300": "fonts/marlik_300.ttf",
-   "400": "fonts/marlik_400.ttf",
-   "500": "fonts/marlik_500.ttf",
-   "600": "fonts/marlik_600.ttf",
-   "700": "fonts/marlik_700.ttf",
-   "800": "fonts/marlik_800.ttf",
-   "900": "fonts/marlik_900.ttf"
-  },
-  "arabic": true,
-  "license": "trial-user-supplied"
- },
- {
   "id": "cairo",
   "nameAr": "القاهرة",
   "nameEn": "Cairo",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/cairo.ttf",
   "variable": true,
   "wght": [
@@ -55,7 +29,7 @@
   "id": "tajawal",
   "nameAr": "تجوّل",
   "nameEn": "Tajawal",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/tajawal.ttf",
   "variable": false,
   "wght": null,
@@ -66,7 +40,7 @@
   "id": "almarai",
   "nameAr": "المراعي",
   "nameEn": "Almarai",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/almarai.ttf",
   "variable": false,
   "wght": null,
@@ -77,7 +51,7 @@
   "id": "noto_sans",
   "nameAr": "نوتو سانس عربي",
   "nameEn": "Noto Sans Arabic",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/noto_sans.ttf",
   "variable": true,
   "wght": [
@@ -89,40 +63,10 @@
   "license": "OFL-1.1"
  },
  {
-  "id": "noto_kufi",
-  "nameAr": "نوتو كوفي",
-  "nameEn": "Noto Kufi Arabic",
-  "group": "kufi",
-  "file": "fonts/noto_kufi.ttf",
-  "variable": true,
-  "wght": [
-   100.0,
-   400.0,
-   900.0
-  ],
-  "arabic": true,
-  "license": "OFL-1.1"
- },
- {
-  "id": "noto_naskh",
-  "nameAr": "نوتو نسخ",
-  "nameEn": "Noto Naskh Arabic",
-  "group": "naskh",
-  "file": "fonts/noto_naskh.ttf",
-  "variable": true,
-  "wght": [
-   400.0,
-   400.0,
-   700.0
-  ],
-  "arabic": true,
-  "license": "OFL-1.1"
- },
- {
   "id": "readex",
   "nameAr": "ريديكس برو",
   "nameEn": "Readex Pro",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/readex.ttf",
   "variable": true,
   "wght": [
@@ -137,7 +81,7 @@
   "id": "plex",
   "nameAr": "آي بي إم بلكس",
   "nameEn": "IBM Plex Sans Arabic",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/plex.ttf",
   "variable": false,
   "wght": null,
@@ -148,7 +92,7 @@
   "id": "alexandria",
   "nameAr": "الإسكندرية",
   "nameEn": "Alexandria",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/alexandria.ttf",
   "variable": true,
   "wght": [
@@ -163,7 +107,7 @@
   "id": "vazirmatn",
   "nameAr": "وزير",
   "nameEn": "Vazirmatn",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/vazirmatn.ttf",
   "variable": true,
   "wght": [
@@ -178,7 +122,7 @@
   "id": "changa",
   "nameAr": "چنجا",
   "nameEn": "Changa",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/changa.ttf",
   "variable": true,
   "wght": [
@@ -193,7 +137,7 @@
   "id": "mada",
   "nameAr": "مدى",
   "nameEn": "Mada",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/mada.ttf",
   "variable": true,
   "wght": [
@@ -208,7 +152,7 @@
   "id": "rubik",
   "nameAr": "روبيك",
   "nameEn": "Rubik",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/rubik.ttf",
   "variable": true,
   "wght": [
@@ -223,13 +167,39 @@
   "id": "elmessiri",
   "nameAr": "المسيري",
   "nameEn": "El Messiri",
-  "group": "arabic",
+  "group": "modern",
   "file": "fonts/elmessiri.ttf",
   "variable": true,
   "wght": [
    400.0,
    400.0,
    700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "zain",
+  "nameAr": "زين",
+  "nameEn": "Zain",
+  "group": "modern",
+  "file": "fonts/zain.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "noto_kufi",
+  "nameAr": "نوتو كوفي",
+  "nameEn": "Noto Kufi Arabic",
+  "group": "kufi",
+  "file": "fonts/noto_kufi.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   900.0
   ],
   "arabic": true,
   "license": "OFL-1.1"
@@ -265,46 +235,42 @@
   "license": "OFL-1.1"
  },
  {
-  "id": "baloo",
-  "nameAr": "بالو بحجان",
-  "nameEn": "Baloo Bhaijaan 2",
-  "group": "fun",
-  "file": "fonts/baloo.ttf",
-  "variable": true,
+  "id": "marlik",
+  "nameAr": "مارليك",
+  "nameEn": "Marlik",
+  "group": "naskh",
+  "file": "fonts/marlik_400.ttf",
+  "variable": false,
   "wght": [
-   400.0,
-   400.0,
-   800.0
+   100,
+   400,
+   900
   ],
+  "weights": {
+   "100": "fonts/marlik_100.ttf",
+   "200": "fonts/marlik_200.ttf",
+   "300": "fonts/marlik_300.ttf",
+   "400": "fonts/marlik_400.ttf",
+   "500": "fonts/marlik_500.ttf",
+   "600": "fonts/marlik_600.ttf",
+   "700": "fonts/marlik_700.ttf",
+   "800": "fonts/marlik_800.ttf",
+   "900": "fonts/marlik_900.ttf"
+  },
   "arabic": true,
-  "license": "OFL-1.1"
+  "license": "trial-user-supplied"
  },
  {
-  "id": "lemonada",
-  "nameAr": "ليمونادا",
-  "nameEn": "Lemonada",
-  "group": "fun",
-  "file": "fonts/lemonada.ttf",
+  "id": "noto_naskh",
+  "nameAr": "نوتو نسخ",
+  "nameEn": "Noto Naskh Arabic",
+  "group": "naskh",
+  "file": "fonts/noto_naskh.ttf",
   "variable": true,
   "wght": [
-   300.0,
+   400.0,
    400.0,
    700.0
-  ],
-  "arabic": true,
-  "license": "OFL-1.1"
- },
- {
-  "id": "playpen",
-  "nameAr": "بلاي بن",
-  "nameEn": "Playpen Sans Arabic",
-  "group": "fun",
-  "file": "fonts/playpen.ttf",
-  "variable": true,
-  "wght": [
-   100.0,
-   400.0,
-   800.0
   ],
   "arabic": true,
   "license": "OFL-1.1"
@@ -380,6 +346,17 @@
   "license": "OFL-1.1"
  },
  {
+  "id": "katibeh",
+  "nameAr": "كاتبة",
+  "nameEn": "Katibeh",
+  "group": "calligraphy",
+  "file": "fonts/katibeh.ttf",
+  "variable": false,
+  "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
   "id": "lalezar",
   "nameAr": "لاله‌زار",
   "nameEn": "Lalezar",
@@ -402,28 +379,6 @@
   "license": "OFL-1.1"
  },
  {
-  "id": "zain",
-  "nameAr": "زين",
-  "nameEn": "Zain",
-  "group": "display",
-  "file": "fonts/zain.ttf",
-  "variable": false,
-  "wght": null,
-  "arabic": true,
-  "license": "OFL-1.1"
- },
- {
-  "id": "katibeh",
-  "nameAr": "كاتبة",
-  "nameEn": "Katibeh",
-  "group": "calligraphy",
-  "file": "fonts/katibeh.ttf",
-  "variable": false,
-  "wght": null,
-  "arabic": true,
-  "license": "OFL-1.1"
- },
- {
   "id": "blaka",
   "nameAr": "بلاكا",
   "nameEn": "Blaka",
@@ -431,6 +386,51 @@
   "file": "fonts/blaka.ttf",
   "variable": false,
   "wght": null,
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "baloo",
+  "nameAr": "بالو بحجان",
+  "nameEn": "Baloo Bhaijaan 2",
+  "group": "fun",
+  "file": "fonts/baloo.ttf",
+  "variable": true,
+  "wght": [
+   400.0,
+   400.0,
+   800.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "lemonada",
+  "nameAr": "ليمونادا",
+  "nameEn": "Lemonada",
+  "group": "fun",
+  "file": "fonts/lemonada.ttf",
+  "variable": true,
+  "wght": [
+   300.0,
+   400.0,
+   700.0
+  ],
+  "arabic": true,
+  "license": "OFL-1.1"
+ },
+ {
+  "id": "playpen",
+  "nameAr": "بلاي بن",
+  "nameEn": "Playpen Sans Arabic",
+  "group": "fun",
+  "file": "fonts/playpen.ttf",
+  "variable": true,
+  "wght": [
+   100.0,
+   400.0,
+   800.0
+  ],
   "arabic": true,
   "license": "OFL-1.1"
  },

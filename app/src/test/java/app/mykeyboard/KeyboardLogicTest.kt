@@ -61,6 +61,16 @@ class KeyboardLogicTest {
         (100..900 step 100).forEach { assertTrue(File(fonts, "marlik_$it.ttf").isFile) }
     }
 
+    @Test fun everyFontHasKnownGroupAndGroupsAreOrdered() {
+        val json = File(fonts, "catalog.json").readText()
+        val groups = Regex("\"group\": \"([^\"]+)\"").findAll(json).map { it.groupValues[1] }.toList()
+        val known = listOf("modern", "kufi", "naskh", "calligraphy", "display", "fun", "latin")
+        assertTrue(groups.all { it in known })
+        // catalog is stored grouped, in display order
+        assertEquals(groups.sortedBy { known.indexOf(it) }, groups)
+        assertEquals(known.toSet(), groups.toSet())
+    }
+
     @Test fun variableWeightAxisParsing() {
         val axis = FontRepository.readWeightAxis(File(fonts, "cairo.ttf"))
         assertNotNull(axis); assertEquals(200, axis!!.first); assertEquals(1000, axis.second)

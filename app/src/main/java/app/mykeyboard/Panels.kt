@@ -57,8 +57,9 @@ class FontPanel(
 ) : Panel(context, palette) {
     private val arabicUi = context.resources.configuration.locales[0].language == "ar"
     private var pendingDelete: String? = null
-    private lateinit var preview: TextView
+    private lateinit var filters: LinearLayout
     private lateinit var chips: LinearLayout
+    private lateinit var chipsScroll: HorizontalScrollView
     private lateinit var list: LinearLayout
 
     init { build() }
@@ -71,17 +72,15 @@ class FontPanel(
         ui.pressable(add, { host.openFontImport() })
         addView(header(c.getString(R.string.fonts_title), host, add), ui.lp(ui.MATCH, ui.WRAP))
 
-        preview = ui.text(c, c.getString(R.string.font_preview_text), 20f, palette.label).apply {
-            background = ui.round(palette.key, ui.dp(c, 12f)); maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            setPadding(ui.dpi(c, 12f), ui.dpi(c, 6f), ui.dpi(c, 12f), ui.dpi(c, 6f))
-            layoutDirection = View.LAYOUT_DIRECTION_LOCALE
-        }
-        addView(preview, ui.lp(ui.MATCH, ui.dpi(c, 44f)).apply { setMargins(ui.dpi(c, 10f), ui.dpi(c, 2f), ui.dpi(c, 10f), ui.dpi(c, 4f)) })
+        val fs = HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
+        filters = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; setPadding(ui.dpi(c, 10f), 0, ui.dpi(c, 10f), 0) }
+        fs.addView(filters)
+        addView(fs, ui.lp(ui.MATCH, ui.dpi(c, 38f)))
 
-        val hs = HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
+        chipsScroll = HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
         chips = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; setPadding(ui.dpi(c, 10f), 0, ui.dpi(c, 10f), 0) }
-        hs.addView(chips)
-        addView(hs, ui.lp(ui.MATCH, ui.dpi(c, 38f)))
+        chipsScroll.addView(chips)
+        addView(chipsScroll, ui.lp(ui.MATCH, ui.dpi(c, 36f)))
 
         val sv = ScrollView(c).apply { isVerticalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER }
         list = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(ui.dpi(c, 8f), 0, ui.dpi(c, 8f), ui.dpi(c, 8f)) }
@@ -92,32 +91,71 @@ class FontPanel(
 
     private fun selected() = fonts.find(prefs.fontId) ?: fonts.builtInFonts().first { it.id == FontRepository.DEFAULT_ID }
 
+    private fun groupLabel(g: String) = context.getString(when (g) {
+        "modern" -> R.string.cat_modern
+        "kufi" -> R.string.cat_kufi
+        "naskh" -> R.string.cat_naskh
+        "calligraphy" -> R.string.cat_calligraphy
+        "display" -> R.string.cat_display
+        "fun" -> R.string.cat_fun
+        else -> R.string.cat_latin
+    })
+
     private fun render() {
         val c = context
         val sel = selected()
-        preview.typeface = fonts.typeface(sel, prefs.fontWeight)
-
-        chips.removeAllViews()
-        val weights = listOf(300 to R.string.weight_light, 400 to R.string.weight_regular, 500 to R.string.weight_medium,
-            600 to R.string.weight_semibold, 700 to R.string.weight_bold, 900 to R.string.weight_black)
-        for ((w, res) in weights) {
-            val enabled = sel.variable
-            val on = enabled && prefs.fontWeight.coerceIn(sel.minWeight, sel.maxWeight) == w.coerceIn(sel.minWeight, sel.maxWeight)
-            val chip = ui.pill(c, c.getString(res), if (on) palette.popupSelected else palette.key, if (on) palette.onAccent else palette.label, 13f)
-            chip.alpha = if (enabled) 1f else 0.4f
-            if (enabled) ui.pressable(chip, { prefs.fontWeight = w; host.fontChanged(); render() })
-            chips.addView(chip, ui.lp(ui.WRAP, ui.dpi(c, 32f)).apply { marginEnd = ui.dpi(c, 6f) })
-        }
-        if (!sel.variable) {
-            chips.addView(ui.text(c, c.getString(R.string.weight_fixed), 12f, palette.hint).apply { setPadding(ui.dpi(c, 6f), 0, 0, 0) })
-        }
-
-        list.removeAllViews()
         val user = fonts.userFonts()
-        if (user.isNotEmpty()) { section(c.getString(R.string.fonts_mine)); grid(user) }
         val builtIn = fonts.builtInFonts()
-        section(c.getString(R.string.fonts_arabic)); grid(builtIn.filter { it.hasArabic })
-        section(c.getString(R.string.fonts_latin)); grid(builtIn.filter { !it.hasArabic })
+        val favs = prefs.favoriteFonts
+        val hasFavs = builtIn.any { it.id in favs } || user.any { it.id in favs }
+
+        // validate the stored filter (a category may be gone, e.g. the last user font was deleted)
+        val groups = GROUP_ORDER.filter { g -> builtIn.any { it.group == g } }
+        var filter = prefs.fontFilter
+        val valid = filter == "all" || (filter == "fav" && hasFavs) || (filter == "mine" && user.isNotEmpty()) || filter in groups
+        if (!valid) { filter = "all"; prefs.fontFilter = "all" }
+
+        // ---- category chips
+        filters.removeAllViews()
+        val entries = ArrayList<Pair<String, String>>()
+        entries.add("all" to c.getString(R.string.cat_all))
+        if (hasFavs) entries.add("fav" to "★ " + c.getString(R.string.cat_favorites))
+        if (user.isNotEmpty()) entries.add("mine" to c.getString(R.string.fonts_mine))
+        groups.forEach { entries.add(it to groupLabel(it)) }
+        for ((key, label) in entries) {
+            val on = key == filter
+            val chip = ui.pill(c, label, if (on) palette.popupSelected else palette.key, if (on) palette.onAccent else palette.label, 13f)
+            ui.pressable(chip, { prefs.fontFilter = key; render() })
+            filters.addView(chip, ui.lp(ui.WRAP, ui.dpi(c, 32f)).apply { marginEnd = ui.dpi(c, 6f); topMargin = ui.dpi(c, 3f) })
+        }
+
+        // ---- weight chips (only for fonts that have weights)
+        chips.removeAllViews()
+        chipsScroll.visibility = if (sel.variable) View.VISIBLE else View.GONE
+        if (sel.variable) {
+            val weights = listOf(300 to R.string.weight_light, 400 to R.string.weight_regular, 500 to R.string.weight_medium,
+                600 to R.string.weight_semibold, 700 to R.string.weight_bold, 900 to R.string.weight_black)
+            for ((w, res) in weights) {
+                val on = prefs.fontWeight.coerceIn(sel.minWeight, sel.maxWeight) == w.coerceIn(sel.minWeight, sel.maxWeight)
+                val chip = ui.pill(c, c.getString(res), if (on) palette.accent else palette.funcKey, if (on) palette.onAccent else palette.funcLabel, 12f)
+                ui.pressable(chip, { prefs.fontWeight = w; host.fontChanged(); render() })
+                chips.addView(chip, ui.lp(ui.WRAP, ui.dpi(c, 30f)).apply { marginEnd = ui.dpi(c, 6f); topMargin = ui.dpi(c, 3f) })
+            }
+        }
+
+        // ---- list
+        list.removeAllViews()
+        val all = user + builtIn
+        when (filter) {
+            "all" -> {
+                if (hasFavs) { section(c.getString(R.string.cat_favorites)); grid(all.filter { it.id in favs }) }
+                if (user.isNotEmpty()) { section(c.getString(R.string.fonts_mine)); grid(user) }
+                groups.forEach { g -> section(groupLabel(g)); grid(builtIn.filter { it.group == g }) }
+            }
+            "fav" -> grid(all.filter { it.id in favs })
+            "mine" -> grid(user)
+            else -> grid(builtIn.filter { it.group == filter })
+        }
     }
 
     private fun section(title: String) {
@@ -140,6 +178,7 @@ class FontPanel(
     private fun card(f: FontEntry): View {
         val c = context
         val isSel = f.id == prefs.fontId
+        val isFav = f.id in prefs.favoriteFonts
         val tf = fonts.typeface(f, if (f.variable) prefs.fontWeight else 400)
         val box = FrameLayout(c).apply {
             background = ui.round(palette.key, ui.dp(c, 14f), if (isSel) palette.accent else 0, if (isSel) ui.dp(c, 2f) else 0f)
@@ -150,25 +189,33 @@ class FontPanel(
         }
         col.addView(ui.text(c, f.displayName(arabicUi), 17f, palette.label, Gravity.START).apply {
             typeface = tf; maxLines = 1; ellipsize = TextUtils.TruncateAt.END; includeFontPadding = true
+            if (isSel) setPadding(0, 0, ui.dpi(c, 22f), 0)
         })
         col.addView(ui.text(c, "أبجد  Abc  ١٢٣", 13f, palette.hint, Gravity.START).apply {
-            typeface = tf; maxLines = 1; includeFontPadding = true
+            typeface = tf; maxLines = 1; includeFontPadding = true; setPadding(0, 0, ui.dpi(c, 30f), 0)
         })
         box.addView(col, FrameLayout.LayoutParams(ui.MATCH, ui.MATCH))
         if (isSel) {
-            val tick = IconView(c, Icon.CHECK, palette.accent)
-            box.addView(tick, FrameLayout.LayoutParams(ui.dpi(c, 28f), ui.dpi(c, 28f), Gravity.TOP or Gravity.END))
+            box.addView(IconView(c, Icon.CHECK, palette.accent), FrameLayout.LayoutParams(ui.dpi(c, 28f), ui.dpi(c, 28f), Gravity.TOP or Gravity.END))
         }
+        val star = IconView(c, if (isFav) Icon.STAR_FILLED else Icon.STAR, if (isFav) palette.accent else palette.hint)
+        ui.pressable(star, {
+            val cur = prefs.favoriteFonts
+            prefs.favoriteFonts = if (f.id in cur) cur - f.id else cur + f.id
+            render()
+        })
+        box.addView(star, FrameLayout.LayoutParams(ui.dpi(c, 32f), ui.dpi(c, 32f), Gravity.BOTTOM or Gravity.END))
         if (!f.builtIn) {
             val confirm = pendingDelete == f.id
             val del = IconView(c, Icon.TRASH, if (confirm) 0xFFFF6B6B.toInt() else palette.hint)
             ui.pressable(del, {
                 if (pendingDelete == f.id) {
                     if (prefs.fontId == f.id) { prefs.fontId = FontRepository.DEFAULT_ID; host.fontChanged() }
+                    prefs.favoriteFonts = prefs.favoriteFonts - f.id
                     fonts.deleteUserFont(f.id); pendingDelete = null; render()
                 } else { pendingDelete = f.id; render(); host.toast(R.string.font_delete_confirm) }
             })
-            box.addView(del, FrameLayout.LayoutParams(ui.dpi(c, 30f), ui.dpi(c, 30f), Gravity.BOTTOM or Gravity.END))
+            box.addView(del, FrameLayout.LayoutParams(ui.dpi(c, 30f), ui.dpi(c, 30f), Gravity.BOTTOM or Gravity.END).apply { marginEnd = ui.dpi(c, 30f) })
         }
         ui.pressable(box, {
             pendingDelete = null
@@ -176,6 +223,10 @@ class FontPanel(
             host.fontChanged(); render()
         })
         return box
+    }
+
+    companion object {
+        val GROUP_ORDER = listOf("modern", "kufi", "naskh", "calligraphy", "display", "fun", "latin")
     }
 }
 

@@ -50,6 +50,15 @@ class Prefs(context: Context) {
         get() = sp.getInt(K_WEIGHT, 400)
         set(v) = sp.edit().putInt(K_WEIGHT, v).apply()
 
+    /** Font library filter: "all", "fav", "mine" or a group id (modern, kufi, naskh, ...). */
+    open var fontFilter: String
+        get() = sp.getString(K_FILTER, "all") ?: "all"
+        set(v) = sp.edit().putString(K_FILTER, v).apply()
+
+    open var favoriteFonts: Set<String>
+        get() = (sp.getString(K_FAVS, "") ?: "").split('\n').filter { it.isNotEmpty() }.toSet()
+        set(v) = sp.edit().putString(K_FAVS, v.joinToString("\n")).apply()
+
     var clipboardHistory: Boolean
         get() = sp.getBoolean(K_CLIP, true)
         set(v) = sp.edit().putBoolean(K_CLIP, v).apply()
@@ -71,6 +80,8 @@ class Prefs(context: Context) {
         const val K_FONT = "font"
         const val K_WEIGHT = "weight"
         const val K_CLIP = "clip"
+        const val K_FILTER = "font_filter"
+        const val K_FAVS = "font_favs"
         const val K_RECENT = "recent_emoji"
     }
 }
