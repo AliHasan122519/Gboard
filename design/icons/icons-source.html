@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8">
+<style>
+@font-face{font-family:Cairo;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/cairo.ttf");font-weight:200 1000}
+@font-face{font-family:Kufi;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/noto_kufi.ttf");font-weight:100 900}
+@font-face{font-family:Dubai;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/dubai.ttf")}
+@font-face{font-family:Reem;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/reemkufi.ttf");font-weight:400 700}
+@font-face{font-family:Lalezar;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/lalezar.ttf")}
+@font-face{font-family:Inter;src:url("file:///home/user/Gboard/app/src/main/assets/fonts/inter.ttf");font-weight:100 900}
+body{margin:0;background:#0e0f16}
+.i{width:512px;height:512px;display:block}
+</style>
+<body>
+<!-- 1: keys grid -->
+<svg id="d1" class="i" viewBox="0 0 108 108"><defs><clipPath id="c1"><rect width="108" height="108" rx="24"/></clipPath></defs>
+<g clip-path="url(#c1)"><rect width="108" height="108" fill="#1C1E2A"/>
+<g fill="#363844"><rect x="18" y="26" width="20" height="17" rx="5"/><rect x="44" y="26" width="20" height="17" rx="5"/><rect x="70" y="26" width="20" height="17" rx="5"/>
+<rect x="18" y="48" width="20" height="17" rx="5"/><rect x="70" y="48" width="20" height="17" rx="5"/></g>
+<rect x="44" y="48" width="20" height="17" rx="5" fill="#BEC2FF"/>
+<rect x="18" y="70" width="72" height="14" rx="7" fill="#434365"/></g></svg>
+
+<!-- 2: Arabic letter on key + latin key -->
+<svg id="d2" class="i" viewBox="0 0 108 108"><defs><clipPath id="c2"><rect width="108" height="108" rx="24"/></clipPath>
+<linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A2D4A"/><stop offset="1" stop-color="#14151f"/></linearGradient></defs>
+<g clip-path="url(#c2)"><rect width="108" height="108" fill="url(#g2)"/>
+<rect x="12" y="22" width="50" height="64" rx="14" fill="#363844"/>
+<text x="37" y="66" text-anchor="middle" font-family="Cairo" font-weight="800" font-size="46" fill="#E1E3F2">ع</text>
+<rect x="68" y="40" width="30" height="46" rx="11" fill="#BEC2FF"/>
+<text x="83" y="74" text-anchor="middle" font-family="Inter" font-weight="700" font-size="30" fill="#1D1F4A">A</text></g></svg>
+
+<!-- 3: split diagonal أ / A -->
+<svg id="d3" class="i" viewBox="0 0 108 108"><defs><clipPath id="c3"><rect width="108" height="108" rx="24"/></clipPath></defs>
+<g clip-path="url(#c3)"><rect width="108" height="108" fill="#4A4DB0"/>
+<path d="M108 0 L108 108 L0 108 Z" fill="#1C1E2A"/>
+<text x="36" y="62" text-anchor="middle" font-family="Cairo" font-weight="900" font-size="46" fill="#fff">ب</text>
+<text x="76" y="88" text-anchor="middle" font-family="Inter" font-weight="800" font-size="40" fill="#BEC2FF">A</text></g></svg>
+
+<!-- 4: font swatch Aa / أ with palette dots -->
+<svg id="d4" class="i" viewBox="0 0 108 108"><defs><clipPath id="c4"><rect width="108" height="108" rx="24"/></clipPath></defs>
+<g clip-path="url(#c4)"><rect width="108" height="108" fill="#1C1E2A"/>
+<rect x="12" y="18" width="40" height="54" rx="14" fill="#363844"/><rect x="56" y="18" width="40" height="54" rx="14" fill="#434365"/>
+<text x="32" y="56" text-anchor="middle" font-family="Dubai" font-size="30" fill="#E1E3F2">بخ</text>
+<text x="76" y="55" text-anchor="middle" font-family="Inter" font-weight="700" font-size="26" fill="#BEC2FF">Aa</text>
+<circle cx="30" cy="89" r="6" fill="#BEC2FF"/><circle cx="48" cy="89" r="6" fill="#F2A7C3"/><circle cx="66" cy="89" r="6" fill="#8FD6C1"/><circle cx="84" cy="89" r="6" fill="#F5D37A"/></g></svg>
+
+<!-- 5: calligraphic ك on soft circle, keyboard row below -->
+<svg id="d5" class="i" viewBox="0 0 108 108"><defs><clipPath id="c5"><rect width="108" height="108" rx="54"/></clipPath>
+<radialGradient id="g5" cx=".3" cy=".2" r="1"><stop offset="0" stop-color="#5A5FD0"/><stop offset="1" stop-color="#23244A"/></radialGradient></defs>
+<g clip-path="url(#c5)"><rect width="108" height="108" fill="url(#g5)"/>
+<text x="54" y="66" text-anchor="middle" font-family="Cairo" font-weight="800" font-size="58" fill="#fff">ك</text>
+<g fill="#ffffff" fill-opacity=".85"><rect x="24" y="78" width="12" height="9" rx="3"/><rect x="40" y="78" width="12" height="9" rx="3"/><rect x="56" y="78" width="12" height="9" rx="3"/><rect x="72" y="78" width="12" height="9" rx="3"/></g></g></svg>
+
+<!-- 6: light, big key with ب and dot as accent -->
+<svg id="d6" class="i" viewBox="0 0 108 108"><defs><clipPath id="c6"><rect width="108" height="108" rx="24"/></clipPath></defs>
+<g clip-path="url(#c6)"><rect width="108" height="108" fill="#F1F0F7"/>
+<rect x="16" y="20" width="76" height="68" rx="20" fill="#fff" stroke="#DCDDF5" stroke-width="2"/>
+<rect x="16" y="76" width="76" height="12" rx="6" fill="#DCDDF5"/>
+<text x="54" y="68" text-anchor="middle" font-family="Cairo" font-weight="900" font-size="52" fill="#2F3167">ب</text>
+<circle cx="80" cy="30" r="5" fill="#4A4DB0"/></g></svg>
+</body>
