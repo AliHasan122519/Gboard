@@ -42,7 +42,35 @@ class UpdateManager(private val context: Context) {
     val currentVersion: String
         get() = ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0"
 
+    /** 1) the update announcement in the repository, 2) the latest GitHub release. */
     fun check(): CheckResult {
+        val fromManifest = checkManifest()
+        if (fromManifest != null) return fromManifest
+        return checkReleases()
+    }
+
+    /** null = manifest unavailable (fall back to releases). */
+    private fun checkManifest(): CheckResult? = try {
+        val url = ctx.getString(R.string.update_manifest_url) + "?t=" + System.currentTimeMillis() / 60000   // dodge the CDN cache
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 12000; readTimeout = 15000; useCaches = false
+            setRequestProperty("User-Agent", "MyKeyboard-Updater")
+        }
+        try {
+            if (conn.responseCode != 200) null
+            else {
+                val info = ManifestParser.parse(conn.inputStream.bufferedReader().use { it.readText() })
+                if (info == null) null
+                else {
+                    prefs.lastUpdateCheck = System.currentTimeMillis()
+                    if (Versions.isNewer(info.version, currentVersion)) { prefs.availableUpdate = info.toJson(); CheckResult.Available(info) }
+                    else { prefs.availableUpdate = null; CheckResult.UpToDate }
+                }
+            }
+        } finally { conn.disconnect() }
+    } catch (e: Exception) { null }
+
+    private fun checkReleases(): CheckResult {
         return try {
             val conn = (URL("https://api.github.com/repos/$repo/releases/latest").openConnection() as HttpURLConnection).apply {
                 connectTimeout = 12000; readTimeout = 15000

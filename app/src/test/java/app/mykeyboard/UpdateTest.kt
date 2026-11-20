@@ -45,4 +45,18 @@ class UpdateTest {
         assertEquals(i, UpdateInfo.fromJson(i.toJson()))
         assertNull(UpdateInfo.fromJson(null)); assertNull(UpdateInfo.fromJson("{}"))
     }
+
+    private val sha = "a".repeat(64)
+    private fun manifest(url: String = "https://raw.githubusercontent.com/o/r/b/update/MyKeyboard-2.apk", hash: String = sha) =
+        """{"versionName":"1.0.1","versionCode":2,"apkUrl":"$url","sha256":"$hash","size":99,"notes":"- faster delete"}"""
+
+    @Test fun manifestIsParsedAndValidated() {
+        val i = app.mykeyboard.update.ManifestParser.parse(manifest())!!
+        assertEquals("1.0.1", i.version); assertEquals(99L, i.size); assertEquals(sha, i.sha256); assertTrue(i.notes.contains("faster"))
+        assertTrue(Versions.isNewer(i.version, "1.0.0")); assertFalse(Versions.isNewer(i.version, "1.0.1"))
+        assertNull("must be https", app.mykeyboard.update.ManifestParser.parse(manifest(url = "http://raw.githubusercontent.com/x.apk")))
+        assertNull("only GitHub hosts", app.mykeyboard.update.ManifestParser.parse(manifest(url = "https://evil.example.com/x.apk")))
+        assertNull("checksum required", app.mykeyboard.update.ManifestParser.parse(manifest(hash = "abc")))
+        assertNull(app.mykeyboard.update.ManifestParser.parse("garbage"))
+    }
 }

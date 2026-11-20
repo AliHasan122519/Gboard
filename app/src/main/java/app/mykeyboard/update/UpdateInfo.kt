@@ -65,3 +65,21 @@ object ReleaseParser {
         null
     }.getOrNull()
 }
+
+object ManifestParser {
+    private val ALLOWED_HOSTS = setOf("raw.githubusercontent.com", "github.com", "objects.githubusercontent.com")
+
+    /**
+     * Parses update/latest.json: {"versionName":"1.0.1","versionCode":2,"apkUrl":"https://...","sha256":"...","size":123,"notes":"..."}.
+     * The APK must be served over https from GitHub and must carry a SHA-256 so the download can be verified.
+     */
+    fun parse(json: String): UpdateInfo? = runCatching {
+        val o = JSONObject(json)
+        val name = o.getString("versionName")
+        val url = o.getString("apkUrl")
+        val host = java.net.URI(url).host ?: return null
+        val sha = o.getString("sha256").lowercase()
+        if (!url.startsWith("https://") || host !in ALLOWED_HOSTS || !Regex("[0-9a-f]{64}").matches(sha)) return null
+        UpdateInfo("v$name", name, o.optString("notes").trim().take(1500), url, o.optLong("size"), sha)
+    }.getOrNull()
+}

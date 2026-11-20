@@ -2,4 +2,6 @@
 <resources>
     <!-- GitHub repository whose latest published release carries the update APK -->
     <string name="update_repo" translatable="false">AliHasan122519/Gboard</string>
+    <!-- Update announcement file kept in the repository (pushed together with each new APK). Checked first. -->
+    <string name="update_manifest_url" translatable="false">https://raw.githubusercontent.com/AliHasan122519/Gboard/ccr-414a76f5-tfmtsf/update/latest.json</string>
 </resources>
