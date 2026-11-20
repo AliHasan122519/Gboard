@@ -1,0 +1,5 @@
+Word lists (ar.txt, en.txt) are derived from "FrequencyWords" by Hermit Dave
+(https://github.com/hermitdave/FrequencyWords), built from OpenSubtitles 2018 data.
+Content licence: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0).
+The derived files in this folder are shared under the same licence. Changes: filtered to letters,
+accents removed, offensive words dropped, truncated to the 40,000 most frequent entries.

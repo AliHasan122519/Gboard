@@ -76,6 +76,23 @@ class Prefs(context: Context) {
         get() = sp.getString(K_INSTALL_ERR, "") ?: ""
         set(v) = sp.edit().putString(K_INSTALL_ERR, v).apply()
 
+    var suggestions: Boolean
+        get() = sp.getBoolean(K_SUGGEST, true)
+        set(v) = sp.edit().putBoolean(K_SUGGEST, v).apply()
+
+    var autocorrect: Boolean
+        get() = sp.getBoolean(K_AUTOCORRECT, true)
+        set(v) = sp.edit().putBoolean(K_AUTOCORRECT, v).apply()
+
+    /** Active Unicode text style id ("none" = off). */
+    open var textStyle: String
+        get() = sp.getString(K_STYLE, "none") ?: "none"
+        set(v) = sp.edit().putString(K_STYLE, v).apply()
+
+    open var imagePreset: Int
+        get() = sp.getInt(K_IMG_PRESET, 0).coerceIn(0, 3)
+        set(v) = sp.edit().putInt(K_IMG_PRESET, v).apply()
+
     var clipboardHistory: Boolean
         get() = sp.getBoolean(K_CLIP, true)
         set(v) = sp.edit().putBoolean(K_CLIP, v).apply()
@@ -97,6 +114,12 @@ class Prefs(context: Context) {
         const val K_FONT = "font"
         const val K_WEIGHT = "weight"
         const val K_CLIP = "clip"
+        const val K_SUGGEST = "suggestions"
+        const val K_AUTOCORRECT = "autocorrect"
+        const val K_STYLE = "text_style"
+        const val K_IMG_PRESET = "image_preset"
+        const val K_MIC_GRANT = "mic_granted"
+        const val K_LEARNED = "learned_words"
         const val K_AUTO_UPDATE = "auto_update"
         const val K_LAST_CHECK = "last_update_check"
         const val K_AVAILABLE = "available_update"

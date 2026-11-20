@@ -180,6 +180,11 @@ class MainActivity : Activity() {
             toggle(c, getString(R.string.pref_sound), null, prefs.sound) { prefs.sound = it }
             toggle(c, getString(R.string.pref_popup), null, prefs.keyPopup) { prefs.keyPopup = it }
             toggle(c, getString(R.string.pref_digits), getString(R.string.pref_digits_desc), prefs.arabicDigits) { prefs.arabicDigits = it }
+            toggle(c, getString(R.string.pref_suggestions), getString(R.string.pref_suggestions_desc), prefs.suggestions) { prefs.suggestions = it }
+            toggle(c, getString(R.string.pref_autocorrect), getString(R.string.pref_autocorrect_desc), prefs.autocorrect) { prefs.autocorrect = it }
+            val forget = Ui.pill(this, getString(R.string.pref_clear_learned), p.background, p.label, 13f)
+            Ui.pressable(forget, { prefs.sp.edit().remove(Prefs.K_LEARNED).apply(); Toast.makeText(this, R.string.learned_cleared, Toast.LENGTH_SHORT).show() })
+            c.addView(forget, Ui.lp(Ui.WRAP, Ui.WRAP).apply { topMargin = dp(10f) })
             toggle(c, getString(R.string.pref_autocap), null, prefs.autoCap) { prefs.autoCap = it }
             toggle(c, getString(R.string.pref_clipboard), getString(R.string.pref_clipboard_desc), prefs.clipboardHistory) { prefs.clipboardHistory = it }
         } }
@@ -192,6 +197,7 @@ class MainActivity : Activity() {
             val arabicUi = resources.configuration.locales[0].language == "ar"
             val names = FontRepository(this).builtInFonts().joinToString("  •  ") { it.displayName(arabicUi) }
             body(c, names)
+            body(c, getString(R.string.about_dict))
         } }
         content.addView(View(this), Ui.lp(1, dp(24f)))
     }

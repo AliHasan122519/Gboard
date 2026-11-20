@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -23,6 +24,10 @@ interface PanelHost {
     fun showImePicker()
     fun fontChanged()
     fun toast(resId: Int)
+    fun openStylePanel()
+    fun sendTextAsImage()
+    fun applyStyleToField()
+    fun styleChanged()
 }
 
 abstract class Panel(context: Context, protected val palette: Palette) : LinearLayout(context) {
@@ -70,7 +75,9 @@ class FontPanel(
         val c = context
         val add = ui.pill(c, "+  " + c.getString(R.string.font_add), palette.accent, palette.onAccent, 13f)
         ui.pressable(add, { host.openFontImport() })
-        addView(header(c.getString(R.string.fonts_title), host, add), ui.lp(ui.MATCH, ui.WRAP))
+        val msg = ui.pill(c, "✉ " + c.getString(R.string.in_messages), palette.funcKey, palette.funcLabel, 13f)
+        ui.pressable(msg, { host.openStylePanel() })
+        addView(header(c.getString(R.string.fonts_title), host, msg, add.also { (it.layoutParams as? ViewGroup.MarginLayoutParams)?.marginStart = 0 }), ui.lp(ui.MATCH, ui.WRAP))
 
         val fs = HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
         filters = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; setPadding(ui.dpi(c, 10f), 0, ui.dpi(c, 10f), 0) }
@@ -372,6 +379,7 @@ class MenuPanel(context: Context, palette: Palette, private val prefs: Prefs, pr
             Triple(Icon.PALETTE, R.string.fonts_title) { host.openPanel(Tool.FONTS) },
             Triple(Icon.SMILEY, R.string.emoji_title) { host.openPanel(Tool.EMOJI) },
             Triple(Icon.CLIPBOARD, R.string.clipboard_title) { host.openPanel(Tool.CLIPBOARD) },
+            Triple(Icon.PALETTE, R.string.in_messages) { host.openStylePanel() },
             Triple(Icon.MOON, R.string.menu_theme) { host.cycleTheme() },
             Triple(Icon.GLOBE, R.string.menu_switch_keyboard) { host.showImePicker() },
             Triple(Icon.GEAR, R.string.menu_settings) { host.openSettings() },
@@ -391,6 +399,71 @@ class MenuPanel(context: Context, palette: Palette, private val prefs: Prefs, pr
             }
             grid.addView(row, ui.lp(ui.MATCH, ui.WRAP))
         }
-        addView(grid, ui.lp(ui.MATCH, ui.WRAP))
+        val sv = ScrollView(c).apply { isVerticalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER }
+        sv.addView(grid)
+        addView(sv, ui.lp(ui.MATCH, 0, 1f))
+    }
+}
+
+// ------------------------------------------------------------------------------------------------ message font / styles
+class StylePanel(
+    context: Context, palette: Palette, private val prefs: Prefs, private val host: PanelHost,
+    private val styles: List<app.mykeyboard.text.TextStyle>,
+) : Panel(context, palette) {
+    private val body = LinearLayout(context).apply { orientation = VERTICAL }
+
+    init {
+        addView(header(context.getString(R.string.styles_title), host), ui.lp(ui.MATCH, ui.WRAP))
+        val sv = ScrollView(context).apply { isVerticalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER }
+        body.setPadding(ui.dpi(context, 10f), ui.dpi(context, 2f), ui.dpi(context, 10f), ui.dpi(context, 10f))
+        sv.addView(body)
+        addView(sv, ui.lp(ui.MATCH, 0, 1f))
+        render()
+    }
+
+    private fun label(t: String, color: Int = palette.hint, size: Float = 12f) =
+        ui.text(context, t, size, color, Gravity.START).apply { setPadding(ui.dpi(context, 4f), ui.dpi(context, 8f), ui.dpi(context, 4f), ui.dpi(context, 2f)); textAlignment = View.TEXT_ALIGNMENT_VIEW_START }
+
+    private fun render() {
+        val c = context
+        body.removeAllViews()
+        // --- 1. send as image (the real font shows up in chats)
+        body.addView(label(c.getString(R.string.img_title), palette.label, 15f))
+        body.addView(label(c.getString(R.string.img_desc)))
+        val row = LinearLayout(c).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, ui.dpi(c, 6f), 0, ui.dpi(c, 4f)) }
+        TextImage.PRESETS.forEachIndexed { i, pr ->
+            val on = prefs.imagePreset == i
+            val dot = View(c).apply { background = ui.round(pr.bg, ui.dp(c, 18f), if (on) palette.accent else palette.divider, ui.dp(c, if (on) 3f else 1f)) }
+            ui.pressable(dot, { prefs.imagePreset = i; render() })
+            row.addView(dot, ui.lp(ui.dpi(c, 36f), ui.dpi(c, 36f)).apply { marginEnd = ui.dpi(c, 8f) })
+        }
+        val send = ui.pill(c, c.getString(R.string.img_send), palette.accent, palette.onAccent, 14f)
+        ui.pressable(send, { host.sendTextAsImage() })
+        row.addView(send, ui.lp(0, ui.WRAP, 1f))
+        body.addView(row)
+
+        // --- 2. unicode styles (work as plain text everywhere)
+        body.addView(label(c.getString(R.string.style_title), palette.label, 15f))
+        body.addView(label(c.getString(R.string.style_desc)))
+        val all = listOf(null) + styles
+        all.chunked(3).forEach { chunk ->
+            val r = LinearLayout(c).apply { orientation = HORIZONTAL }
+            for (st in chunk) {
+                val id = st?.id ?: "none"
+                val on = prefs.textStyle == id
+                val sample = st?.apply("Abc أبجد") ?: c.getString(R.string.style_normal)
+                val chip = ui.text(c, sample, 15f, if (on) palette.onAccent else palette.label).apply {
+                    background = ui.round(if (on) palette.accent else palette.key, ui.dp(c, 12f)); maxLines = 1
+                    setPadding(ui.dpi(c, 4f), 0, ui.dpi(c, 4f), 0)
+                }
+                ui.pressable(chip, { prefs.textStyle = id; host.styleChanged(); render() })
+                r.addView(chip, ui.lp(0, ui.dpi(c, 42f), 1f).apply { setMargins(ui.dpi(c, 3f), ui.dpi(c, 3f), ui.dpi(c, 3f), ui.dpi(c, 3f)) })
+            }
+            repeat(3 - chunk.size) { r.addView(View(c), ui.lp(0, 1, 1f)) }
+            body.addView(r)
+        }
+        val apply = ui.pill(c, c.getString(R.string.style_apply), palette.funcKey, palette.funcLabel, 13f)
+        ui.pressable(apply, { host.applyStyleToField() })
+        body.addView(apply, ui.lp(ui.WRAP, ui.WRAP).apply { topMargin = ui.dpi(c, 8f) })
     }
 }

@@ -113,4 +113,34 @@
     <string name="crash_copied">تم النسخ</string>
     <string name="crash_show">عرض التقرير</string>
     <string name="crash_dismiss">إخفاء</string>
+
+    <!-- message font / styles -->
+    <string name="in_messages">في الرسائل</string>
+    <string name="styles_title">الخط في الرسائل</string>
+    <string name="img_title">أرسل كصورة بخطك</string>
+    <string name="img_desc">تطبيقات المحادثة ترسم النص بخطها الخاص، فلا تستطيع لوحة المفاتيح تغييره. هذا الخيار يحوّل رسالتك إلى صورة مكتوبة بالخط المختار ويرسلها.</string>
+    <string name="img_send">إرسال الرسالة كصورة</string>
+    <string name="img_empty">اكتب رسالتك في حقل الكتابة أولًا</string>
+    <string name="img_sent">تم إرسال الصورة</string>
+    <string name="img_copied">هذا التطبيق لا يستقبل الصور من لوحة المفاتيح. نُسخت الصورة: الصقها في المحادثة.</string>
+    <string name="img_failed">تعذّر إنشاء الصورة</string>
+    <string name="style_title">أنماط النص (تعمل في أي تطبيق)</string>
+    <string name="style_desc">تحوّل الحروف إلى رموز مشابهة بأشكال مختلفة. الحروف اللاتينية والأرقام تتغير، أما العربية فيمكن تطويلها أو وضع خط تحتها أو شطبها. اختر نمطًا ثم اكتب.</string>
+    <string name="style_normal">عادي</string>
+    <string name="style_apply">طبّق على النص في الحقل</string>
+    <string name="style_pick_first">اختر نمطًا أولًا</string>
+    <!-- voice dictation -->
+    <string name="voice_listening">جارٍ الاستماع… اضغط للإيقاف</string>
+    <string name="voice_no_speech">لم يُسمع أي كلام</string>
+    <string name="voice_network">الإملاء الصوتي يحتاج اتصالًا بالإنترنت</string>
+    <string name="voice_permission">اسمح بالميكروفون لاستخدام الإملاء الصوتي</string>
+    <string name="voice_error">فشل الإملاء الصوتي، حاول مرة أخرى</string>
+    <!-- typing assistance settings -->
+    <string name="pref_suggestions">اقتراح الكلمات</string>
+    <string name="pref_suggestions_desc">تظهر فوق المفاتيح أثناء الكتابة</string>
+    <string name="pref_autocorrect">التصحيح التلقائي</string>
+    <string name="pref_autocorrect_desc">يصحح الأخطاء الواضحة عند كتابة مسافة. اضغط حذف مباشرة بعده للتراجع.</string>
+    <string name="pref_clear_learned">نسيان الكلمات المتعلَّمة</string>
+    <string name="learned_cleared">تم حذف الكلمات المتعلَّمة</string>
+    <string name="about_dict">قوائم الكلمات مشتقة من FrequencyWords للمطوّر Hermit Dave (OpenSubtitles) برخصة CC BY-SA 4.0. الكلمات المتعلَّمة تُحفظ على هذا الجهاز فقط. الإملاء الصوتي يرسل الصوت إلى خدمة التعرف على الكلام في الجهاز (غالبًا Google).</string>
 </resources>

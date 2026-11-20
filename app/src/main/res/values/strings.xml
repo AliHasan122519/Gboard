@@ -113,4 +113,34 @@
     <string name="crash_copied">Copied</string>
     <string name="crash_show">Show report</string>
     <string name="crash_dismiss">Dismiss</string>
+
+    <!-- message font / styles -->
+    <string name="in_messages">In messages</string>
+    <string name="styles_title">Font in messages</string>
+    <string name="img_title">Send as an image in your font</string>
+    <string name="img_desc">Chat apps draw text in their own font, so the keyboard font cannot change it. This turns your message into a picture written in the selected font and sends it.</string>
+    <string name="img_send">Send message as image</string>
+    <string name="img_empty">Type your message in the text field first</string>
+    <string name="img_sent">Image sent</string>
+    <string name="img_copied">This app cannot receive images from the keyboard. The image was copied: paste it in the chat.</string>
+    <string name="img_failed">Could not create the image</string>
+    <string name="style_title">Text styles (work in any app)</string>
+    <string name="style_desc">Turns letters into look-alike styled characters. Latin letters and digits change; Arabic can be stretched, underlined or struck through. Tap a style, then type.</string>
+    <string name="style_normal">Normal</string>
+    <string name="style_apply">Apply to the text in the field</string>
+    <string name="style_pick_first">Pick a style first</string>
+    <!-- voice dictation -->
+    <string name="voice_listening">Listening… tap to stop</string>
+    <string name="voice_no_speech">No speech was heard</string>
+    <string name="voice_network">Voice typing needs an internet connection</string>
+    <string name="voice_permission">Allow the microphone to use voice typing</string>
+    <string name="voice_error">Voice typing failed, try again</string>
+    <!-- typing assistance settings -->
+    <string name="pref_suggestions">Word suggestions</string>
+    <string name="pref_suggestions_desc">Shown above the keys while typing</string>
+    <string name="pref_autocorrect">Auto-correction</string>
+    <string name="pref_autocorrect_desc">Fixes obvious typos when you type a space. Tap backspace right after to undo.</string>
+    <string name="pref_clear_learned">Forget learned words</string>
+    <string name="learned_cleared">Learned words deleted</string>
+    <string name="about_dict">Word lists derived from FrequencyWords by Hermit Dave (OpenSubtitles), licence CC BY-SA 4.0. Learned words are stored only on this device. Voice typing sends audio to the device speech service (usually Google).</string>
 </resources>

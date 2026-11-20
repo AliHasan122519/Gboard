@@ -35,6 +35,7 @@ class SmokeTest {
             override fun closePanel() {}; override fun insert(text: String) {}; override fun backspace() {}
             override fun openFontImport() {}; override fun openSettings() {}; override fun openPanel(tool: Tool) {}
             override fun cycleTheme() {}; override fun showImePicker() {}; override fun fontChanged() {}; override fun toast(resId: Int) {}
+            override fun openStylePanel() {}; override fun sendTextAsImage() {}; override fun applyStyleToField() {}; override fun styleChanged() {}
         }
         FontPanel(ctx, Palette.DARK, prefs, fonts, host)
         EmojiPanel(ctx, Palette.DARK, prefs, host)
@@ -55,5 +56,28 @@ class CrashReportTest {
         val c = Robolectric.buildActivity(CrashActivity::class.java).create().start().resume().visible().get()
         assertNotNull(c.window.decorView)
         CrashReporter.file(ctx).delete()
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w411dp-h900dp-xxhdpi")
+class MessageImageTest {
+    @Test fun rendersArabicTextInChosenFontAndServesIt() {
+        val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val fonts = FontRepository(ctx)
+        val file = TextImage.render(ctx, "السلام عليكم ورحمة الله\nHello from my keyboard", fonts.typeface(fonts.find("cairo"), 600), TextImage.PRESETS[0])
+        assertTrue(file.isFile && file.length() > 2000)
+        val bmp = android.graphics.BitmapFactory.decodeFile(file.path)
+        assertEquals(900, bmp.width); assertTrue(bmp.height > 100)
+        val colors = HashSet<Int>(); for (x in 0 until bmp.width step 7) for (y in 0 until bmp.height step 7) colors.add(bmp.getPixel(x, y))
+        assertTrue("text must be drawn on the background", colors.size > 2)
+        // served through the provider
+        val provider = Robolectric.buildContentProvider(StickerProvider::class.java).create("app.mykeyboard.stickers").get()
+        val uri = TextImage.uriFor(ctx, file)
+        assertEquals("image/png", provider.getType(uri))
+        assertNotNull(provider.openFile(uri, "r"))
+        assertThrows(java.io.FileNotFoundException::class.java) { provider.openFile(android.net.Uri.parse("content://app.mykeyboard.stickers/..%2F..%2Fshared_prefs%2Fsettings.xml"), "r") }
+        assertThrows(SecurityException::class.java) { provider.openFile(uri, "w") }
     }
 }

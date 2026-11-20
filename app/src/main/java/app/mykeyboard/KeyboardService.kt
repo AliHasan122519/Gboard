@@ -17,6 +17,19 @@ import android.view.inputmethod.InputMethodSubtype
 import android.widget.FrameLayout
 import android.widget.Toast
 import android.icu.text.BreakIterator
+import android.content.ClipData
+import android.content.ClipDescription
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.view.inputmethod.ExtractedTextRequest
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputContentInfo
+import app.mykeyboard.text.Correction
+import app.mykeyboard.text.LearnedWords
+import app.mykeyboard.text.SuggestionEngine
+import app.mykeyboard.text.TextStyle
+import app.mykeyboard.text.WordDict
 
 class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -39,18 +52,35 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     private var lastShiftTap = 0L
     private var inputTypeFull = 0
 
+    // typing assistance
+    private var engine: SuggestionEngine? = null
+    private var suggestOk = true
+    private var currentSuggestions: List<String> = emptyList()
+    private var lastCorrection: Correction? = null
+    private var lastBoundary = ""
+    private var styleList: List<TextStyle>? = null
+    private lateinit var voice: VoiceInput
+
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClipboard() }
 
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this); fonts = FontRepository(this); clip = ClipboardStore(this)
         lang = prefs.lang
+        voice = VoiceInput(this, object : VoiceInput.Callback {
+            override fun onPartial(text: String) { kv?.setStatus(text); currentInputConnection?.setComposingText(styled(text), 1) }
+            override fun onFinal(text: String) { currentInputConnection?.commitText(styled(text) + " ", 1); refreshSuggestions() }
+            override fun onState(listening: Boolean) { kv?.setStatus(if (listening) getString(R.string.voice_listening) else null) }
+            override fun onError(messageRes: Int) { currentInputConnection?.finishComposingText(); if (messageRes != 0) toast(messageRes) }
+        })
+        loadDictionaries()
         runCatching { app.mykeyboard.update.UpdateManager(this).scheduleDaily() }   // local scheduling only, no network here
         prefs.sp.registerOnSharedPreferenceChangeListener(this)
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).addPrimaryClipChangedListener(clipListener)
     }
 
     override fun onDestroy() {
+        runCatching { voice.cancel() }
         prefs.sp.unregisterOnSharedPreferenceChangeListener(this)
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).removePrimaryClipChangedListener(clipListener)
         super.onDestroy()
@@ -126,6 +156,8 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
             Prefs.K_THEME -> applyTheme()
             Prefs.K_HEIGHT -> { kv?.refreshGeometry(); updatePanelMargin() }
             Prefs.K_DIGITS -> applyLayout()
+            Prefs.K_MIC_GRANT -> startVoice()
+            Prefs.K_SUGGEST, Prefs.K_AUTOCORRECT, Prefs.K_STYLE -> refreshSuggestions()
             FONT_LIST_VERSION -> fontPanel?.refresh()
         }
     }
@@ -169,8 +201,22 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
             EditorInfo.IME_ACTION_DONE -> EnterKind.DONE
             else -> EnterKind.ENTER
         }
+        suggestOk = !(passwordField || latinOnlyField || numeric || info.inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0)
+        lastCorrection = null
         updateAutoCap()
         applyLayout()
+        refreshSuggestions()
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        runCatching { voice.cancel() }
+        kv?.setSuggestions(emptyList())
+    }
+
+    override fun onUpdateSelection(oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        refreshSuggestions()
     }
 
     override fun onCurrentInputMethodSubtypeChanged(subtype: InputMethodSubtype) {
@@ -193,16 +239,69 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         try { handleKey(action, text) } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.onKey($action)", t) }
     }
 
+    private fun isBoundary(action: Action, text: String): Boolean = when (action) {
+        Action.SPACE, Action.ENTER, Action.PERIOD, Action.COMMA -> true
+        Action.TEXT -> text.isNotEmpty() && !text[0].isLetterOrDigit() && text[0] != '\'' && text[0] != '’'
+        else -> false
+    }
+
+    private fun activeStyle(): TextStyle? = prefs.textStyle.takeIf { it != "none" }?.let { id -> styles().firstOrNull { it.id == id } }
+
+    private fun styles(): List<TextStyle> = styleList ?: runCatching {
+        TextStyle.load(assets.open("styles.json").bufferedReader().use { it.readText() })
+    }.getOrDefault(emptyList()).also { styleList = it }
+
+    private fun styled(t: String): String = activeStyle()?.apply(t) ?: t
+
+    private fun assistOn() = suggestOk && prefs.suggestions && page == Page.LETTERS && prefs.textStyle == "none"
+
+    /** At a word boundary: fix the word just typed (or remember it) before the boundary character goes in. */
+    private fun beforeBoundary(): Correction? {
+        val e = engine ?: return null
+        val ic = currentInputConnection ?: return null
+        val before = ic.getTextBeforeCursor(40, 0) ?: return null
+        if (!assistOn()) return null
+        val corr = e.capitalizeI(before, lang) ?: if (prefs.autocorrect) e.autoCorrect(before, lang) else null
+        if (corr != null) {
+            ic.beginBatchEdit(); ic.deleteSurroundingText(corr.original.length, 0); ic.commitText(corr.replacement, 1); ic.endBatchEdit()
+        } else e.learn(e.currentWord(before, lang), lang)
+        return corr
+    }
+
+    private fun revertCorrection(): Boolean {
+        val lc = lastCorrection ?: return false
+        val ic = currentInputConnection ?: return false
+        lastCorrection = null
+        val tail = lc.replacement + lastBoundary
+        if (ic.getTextBeforeCursor(tail.length, 0)?.toString() != tail) return false
+        ic.beginBatchEdit(); ic.deleteSurroundingText(tail.length, 0); ic.commitText(lc.original, 1); ic.endBatchEdit()
+        engine?.rejectCorrection(lc.original)
+        return true
+    }
+
+    private fun refreshSuggestions() {
+        val e = engine
+        currentSuggestions = if (e == null || !assistOn()) emptyList()
+        else e.suggest(currentInputConnection?.getTextBeforeCursor(40, 0) ?: "", lang)
+        if (!voice.listening) kv?.setSuggestions(currentSuggestions)
+    }
+
     private fun handleKey(action: Action, text: String) {
         val ic = currentInputConnection
+        if (action != Action.BACKSPACE) lastCorrection = null
+        val boundary = isBoundary(action, text)
+        val corr = if (boundary && action != Action.ENTER) beforeBoundary() else if (boundary) { beforeBoundary(); null } else null
+        // stretched-letter style: a trailing tatweel must not stay at the end of a word
+        if (boundary && activeStyle()?.kashida == true && ic?.getTextBeforeCursor(1, 0)?.toString() == "\u0640") ic.deleteSurroundingText(1, 0)
         when (action) {
             Action.TEXT, Action.COMMA, Action.PERIOD -> {
-                ic?.commitText(text, 1)
+                ic?.commitText(activeStyle()?.typed(text) ?: text, 1)
                 if (shift == Shift.ON && lang == "en" && page == Page.LETTERS) shift = Shift.OFF
+                if (corr != null) { lastCorrection = corr; lastBoundary = text }
                 updateAutoCap(); applyLayout()
             }
-            Action.SPACE -> { ic?.commitText(" ", 1); updateAutoCap(); applyLayout() }
-            Action.BACKSPACE -> { backspace(); updateAutoCap(); applyLayout() }
+            Action.SPACE -> { ic?.commitText(" ", 1); if (corr != null) { lastCorrection = corr; lastBoundary = " " }; updateAutoCap(); applyLayout() }
+            Action.BACKSPACE -> { if (!revertCorrection()) backspace(); updateAutoCap(); applyLayout() }
             Action.ENTER -> { sendEnter(); updateAutoCap(); applyLayout() }
             Action.SHIFT -> {
                 val now = System.currentTimeMillis()
@@ -223,7 +322,23 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
                 page = Page.LETTERS; shift = Shift.OFF; updateAutoCap(); applyLayout()
             }
         }
+        refreshSuggestions()
     }
+
+    override fun onSuggestion(index: Int) {
+        try {
+            val text = currentSuggestions.getOrNull(index) ?: return
+            val e = engine ?: return
+            val ic = currentInputConnection ?: return
+            val w = e.currentWord(ic.getTextBeforeCursor(40, 0) ?: "", lang)
+            ic.beginBatchEdit(); ic.deleteSurroundingText(w.length, 0); ic.commitText("$text ", 1); ic.endBatchEdit()
+            if (text == w) e.rejectCorrection(w)              // the user insisted on the word as typed
+            lastCorrection = null
+            updateAutoCap(); applyLayout(); refreshSuggestions()
+        } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.onSuggestion", t) }
+    }
+
+    override fun onStatusTap() { voice.stop() }
 
     override fun onLongAction(action: Action) {
         when (action) {
@@ -307,6 +422,18 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     }
 
     private fun startVoice() {
+        if (voice.listening) { voice.stop(); return }
+        if (!voice.available()) { legacyVoiceIme(); return }
+        if (!voice.hasPermission()) {
+            startActivity(Intent(this, MicPermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return
+        }
+        closePanel()
+        voice.start(lang)
+    }
+
+    /** No speech service on the device: hand over to another keyboard's voice mode if one is enabled. */
+    private fun legacyVoiceIme() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         for (imi in imm.enabledInputMethodList) {
             if (imi.packageName == packageName) continue
@@ -321,11 +448,88 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         toast(R.string.toast_no_voice)
     }
 
+    private fun loadDictionaries() {
+        val appPrefs = prefs
+        Thread {
+            val dicts = HashMap<String, WordDict>()
+            for (l in listOf("ar", "en")) runCatching {
+                val d = WordDict(l)
+                assets.open("dict/$l.txt").bufferedReader().useLines { d.load(it) }
+                dicts[l] = d
+            }
+            val learned = LearnedWords(
+                { appPrefs.sp.getString(Prefs.K_LEARNED, "") ?: "" },
+                { appPrefs.sp.edit().putString(Prefs.K_LEARNED, it).apply() },
+            )
+            Handler(Looper.getMainLooper()).post { engine = SuggestionEngine(dicts, learned); refreshSuggestions() }
+        }.start()
+    }
+
+    // ------------------------------------------------------------------ message font: styles + image
+    private fun fullFieldText(ic: InputConnection): String {
+        val ex = ic.getExtractedText(ExtractedTextRequest(), 0)?.text?.toString()
+        if (!ex.isNullOrEmpty()) return ex
+        return (ic.getTextBeforeCursor(5000, 0) ?: "").toString() + (ic.getTextAfterCursor(5000, 0) ?: "").toString()
+    }
+
+    private fun clearField(ic: InputConnection) {
+        val b = ic.getTextBeforeCursor(5000, 0)?.length ?: 0
+        val a = ic.getTextAfterCursor(5000, 0)?.length ?: 0
+        ic.deleteSurroundingText(b, a)
+    }
+
+    override fun styleChanged() { refreshSuggestions() }
+
+    override fun applyStyleToField() {
+        val ic = currentInputConnection ?: return
+        val st = activeStyle() ?: run { toast(R.string.style_pick_first); return }
+        val text = fullFieldText(ic)
+        if (text.isEmpty()) { toast(R.string.img_empty); return }
+        ic.beginBatchEdit(); clearField(ic); ic.commitText(st.apply(text), 1); ic.endBatchEdit()
+    }
+
+    /** Renders the message in the selected font and sends it as an image (or copies it if the app cannot take images). */
+    override fun sendTextAsImage() {
+        val ic = currentInputConnection ?: return
+        val text = fullFieldText(ic)
+        if (text.isBlank()) { toast(R.string.img_empty); return }
+        try {
+            val tf = fonts.typeface(fonts.find(prefs.fontId), prefs.fontWeight)
+            val file = TextImage.render(this, text, tf, TextImage.PRESETS[prefs.imagePreset])
+            val uri = TextImage.uriFor(this, file)
+            val types = currentInputEditorInfo?.contentMimeTypes
+            val accepts = types?.any { it == "image/png" || it == "image/*" || it == "image/gif" } == true
+            val sent = accepts && ic.commitContent(
+                InputContentInfo(uri, ClipDescription("message", arrayOf("image/png"))),
+                InputConnection.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null,
+            )
+            if (sent) { clearField(ic); closePanel(); toast(R.string.img_sent) }
+            else {
+                (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newUri(contentResolver, "message", uri))
+                toast(R.string.img_copied)
+            }
+        } catch (t: Throwable) {
+            CrashReporter.record(this, "KeyboardService.sendTextAsImage", t); toast(R.string.img_failed)
+        }
+    }
+
+    override fun openStylePanel() {
+        val host = panelHost ?: return
+        val view = StylePanel(this, palette, prefs, this, styles())
+        host.removeAllViews()
+        host.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        host.visibility = View.VISIBLE
+        currentPanel = Tool.FONTS
+        fontPanel = null
+        kv?.activeTool = Tool.FONTS
+    }
+
     private fun captureClipboard() {
         if (!prefs.clipboardHistory || passwordField) return
         val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val c = cm.primaryClip ?: return
         if (c.itemCount == 0) return
+        if (c.description.hasMimeType("image/*")) return      // our own rendered messages, not text
         if (Build.VERSION.SDK_INT >= 33 && c.description.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true) return
         runCatching { c.getItemAt(0).coerceToText(this)?.toString() }.getOrNull()?.let { clip.add(it) }
     }

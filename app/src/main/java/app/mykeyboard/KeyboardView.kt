@@ -23,6 +23,8 @@ interface KeyboardListener {
     fun onKey(action: Action, text: String)
     fun onLongAction(action: Action)
     fun onTool(tool: Tool)
+    fun onSuggestion(index: Int)
+    fun onStatusTap()
 }
 
 /**
@@ -37,10 +39,20 @@ class KeyboardView(
 
     var listener: KeyboardListener? = null
     private var palette: Palette = Palette.DARK
+    /** The chosen font: used for the letters only. */
     private var typeface: Typeface = Typeface.DEFAULT
+    /** Fixed system face for everything that is not a letter (hints, space label, pill labels, comma, period). */
+    private val uiFace: Typeface = Typeface.DEFAULT
     private var state = LayoutState("ar")
     private var rows: List<Row> = emptyList()
     private var rtlUi = false
+    /** Word suggestions shown in place of the tool icons while typing (empty = show the tools). */
+    private var suggestions: List<String> = emptyList()
+    /** Non-null while a status line (dictation) replaces the tool strip. */
+    private var status: String? = null
+    private var pressedStrip = -1
+    fun setSuggestions(list: List<String>) { if (list != suggestions) { suggestions = list; invalidate() } }
+    fun setStatus(s: String?) { if (s != status) { status = s; invalidate() } }
     var activeTool: Tool? = null
         set(v) { field = v; invalidate() }
 
@@ -68,7 +80,7 @@ class KeyboardView(
 
     // ---- state setters ----
     fun setPalette(p: Palette) { palette = p; invalidate() }
-    fun setTypeface(tf: Typeface) { typeface = tf; refCache.clear(); invalidate() }
+    fun setTypeface(tf: Typeface) { typeface = tf; refCache.clear(); sizeCache.clear(); bottomCache.clear(); invalidate() }
     fun setLayoutState(s: LayoutState) { state = s; rows = Layouts.rows(s); layoutKeys(); cancelAll(); invalidate() }
     fun setRtlUi(rtl: Boolean) { rtlUi = rtl; invalidate() }
     fun refreshGeometry() { requestLayout(); layoutKeys(); invalidate() }
@@ -87,10 +99,36 @@ class KeyboardView(
 
     // ---- drawing ----
     private val refCache = HashMap<String, Float>()
+    private val sizeCache = HashMap<String, Float>()
+    private val bottomCache = HashMap<String, Float>()
+
+    /**
+     * Text size that makes the chosen font's alef (Arabic) / capital H (Latin) exactly as tall as in the reference design,
+     * so every font fills the keys the same way and only the letter *shapes* differ.
+     */
+    private fun letterSize(arabic: Boolean, keyH: Float): Float {
+        val key = "${if (arabic) "a" else "l"}|${keyH.toInt()}"
+        return sizeCache.getOrPut(key) {
+            val probe = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = this@KeyboardView.typeface; textSize = 100f }
+            val ref = if (arabic) "ا" else "H"
+            probe.getTextBounds(ref, 0, ref.length, bounds)
+            val h = (bounds.bottom - bounds.top).toFloat().coerceAtLeast(1f)
+            val target = keyH * if (arabic) ALEF_H else CAP_H
+            val size = (target * 100f / h).coerceIn(keyH * 0.18f, keyH * 0.9f)
+            // where the reference glyph's bottom edge sits relative to the font baseline (some calligraphic fonts float the alef)
+            bottomCache[key] = bounds.bottom * size / 100f
+            size
+        }
+    }
+
+    private fun letterBottom(arabic: Boolean, keyH: Float): Float {
+        letterSize(arabic, keyH)
+        return bottomCache["${if (arabic) "a" else "l"}|${keyH.toInt()}"] ?: 0f
+    }
 
     /** Baseline that visually centres a reference string vertically on [cy], so all keys share one baseline. */
     private fun baselineFor(p: Paint, cy: Float, latin: Boolean): Float {
-        val key = "${p.textSize}|$latin"
+        val key = "${System.identityHashCode(p.typeface)}|${p.textSize}|$latin"
         val off = refCache.getOrPut(key) {
             val ref = if (latin) "xh" else "لجا"
             p.getTextBounds(ref, 0, ref.length, bounds)
@@ -101,8 +139,8 @@ class KeyboardView(
 
     private fun isLatin(s: String) = s.isNotEmpty() && s[0].code < 0x250
 
-    private fun setText(size: Float, color: Int, align: Paint.Align = Paint.Align.CENTER) {
-        text.typeface = typeface; text.textSize = size; text.color = color; text.textAlign = align
+    private fun setText(size: Float, color: Int, align: Paint.Align = Paint.Align.CENTER, face: Typeface = uiFace) {
+        text.typeface = face; text.textSize = size; text.color = color; text.textAlign = align
     }
 
     override fun onDraw(c: Canvas) {
@@ -120,7 +158,47 @@ class KeyboardView(
         return floatArrayOf(68f, 257f, 445f, 633f, 820f, 1010f).map { it / 1079f * w }.toFloatArray()
     }
 
+    private fun stripBounds(): Pair<Float, Float> {
+        val m = KeyGeometry.margin(width.toFloat()); return m to (width - m)
+    }
+
+    private fun drawStrip(c: Canvas) {
+        val cy = dp(25.5f)
+        val (l, r) = stripBounds()
+        val st = status
+        if (st != null) {
+            // dictation: accent mic circle + live text
+            fillPaint.color = palette.accent
+            c.drawCircle(l + dp(19.5f), cy, dp(19.5f), fillPaint)
+            Icons.draw(c, Icon.MIC, l + dp(19.5f), cy, dp(21f), palette.onAccent)
+            setText(dp(17f), palette.label, Paint.Align.LEFT)
+            val avail = r - l - dp(56f)
+            val shown = android.text.TextUtils.ellipsize(st, android.text.TextPaint(text), avail, android.text.TextUtils.TruncateAt.START).toString()
+            text.textAlign = Paint.Align.LEFT
+            c.drawText(shown, l + dp(50f), baselineFor(text, cy, isLatin(shown)), text)
+            return
+        }
+        val n = 3
+        val cw = (r - l) / n
+        for (i in 0 until n) {
+            val sug = suggestions.getOrNull(i) ?: continue
+            val x0 = l + i * cw
+            if (pressedStrip == i) {
+                tmpRect.set(x0 + dp(3f), dp(6f), x0 + cw - dp(3f), dp(45f))
+                fillPaint.color = palette.keyPressed; c.drawRoundRect(tmpRect, dp(12f), dp(12f), fillPaint)
+            }
+            setText(letterSize(!isLatin(sug), keyH) * 0.75f, if (i == 0) palette.label else palette.hint, face = typeface)
+            val fit = android.text.TextUtils.ellipsize(sug, android.text.TextPaint(text), cw - dp(14f), android.text.TextUtils.TruncateAt.END).toString()
+            c.drawText(fit, x0 + cw / 2f, baselineFor(text, cy, isLatin(fit)), text)
+            if (i < n - 1 && suggestions.size > i + 1) {
+                fillPaint.color = palette.divider
+                c.drawRect(x0 + cw - dp(0.5f), dp(14f), x0 + cw + dp(0.5f), dp(37f), fillPaint)
+            }
+        }
+    }
+
     private fun drawToolbar(c: Canvas) {
+        if (status != null || suggestions.isNotEmpty()) { drawStrip(c); return }
         val cy = dp(25.5f)
         val xs = toolCenters()
         val icons = arrayOf(Icon.MIC, Icon.GEAR, Icon.PALETTE, Icon.CLIPBOARD, Icon.STICKER, Icon.GRID)
@@ -188,9 +266,11 @@ class KeyboardView(
             }
             Action.TEXT -> {
                 val latin = isLatin(k.label)
-                setText(k.h * if (latin) 0.47f else 0.46f, labelColor)
-                if (k.label.length > 1 && !latin) text.textSize = k.h * 0.40f
-                c.drawText(k.label, cx, baselineFor(text, cy, latin), text)
+                var size = letterSize(!latin, k.h)
+                if (k.label.length > 1 && !latin) size *= 0.82f          // "لا" style ligatures
+                setText(size, labelColor, face = typeface)
+                // fixed baseline (measured from the reference: 72.7 % of the key height for Arabic)
+                c.drawText(k.label, cx, k.y + k.h * (if (latin) BASE_LATIN else BASE_ARABIC) - letterBottom(!latin, k.h), text)
                 k.hint?.let {
                     setText(k.h * 0.22f, palette.hint, Paint.Align.RIGHT)
                     c.drawText(it, k.x + k.w - k.w * 0.13f, k.y + k.h * 0.27f, text)
@@ -221,6 +301,8 @@ class KeyboardView(
         var cellH = 0f
         var repeating = false
         var consumed = false
+        /** >= 0: suggestion index, -2: dictation status line, -1: not a strip touch. */
+        var strip = -1
     }
 
     private val pointers = SparseArray<Ptr>()
@@ -247,7 +329,7 @@ class KeyboardView(
         fillPaint.color = palette.popup
         c.drawRoundRect(tmpRect, dp(10f), dp(10f), fillPaint)
         val latin = isLatin(k.label)
-        setText(k.h * if (latin) 0.72f else 0.66f, palette.label)
+        setText(letterSize(!latin, k.h) * 1.45f, palette.label, face = typeface)
         c.drawText(k.label, tmpRect.centerX(), baselineFor(text, tmpRect.centerY(), latin), text)
     }
 
@@ -277,7 +359,7 @@ class KeyboardView(
             tmpRect.set(l + dp(3f), t + dp(3f), l + p.cellW - dp(3f), t + p.cellH - dp(3f))
             val sel = i == p.selected
             if (sel) { fillPaint.color = palette.popupSelected; c.drawRoundRect(tmpRect, dp(9f), dp(9f), fillPaint) }
-            setText(k.h * 0.46f, if (sel) palette.onAccent else palette.label)
+            setText(letterSize(!isLatin(a), k.h) * 1.1f, if (sel) palette.onAccent else palette.label, face = typeface)
             val label = altLabel(a)
             c.drawText(label, tmpRect.centerX(), baselineFor(text, tmpRect.centerY(), latin && isLatin(a)), text)
         }
@@ -395,6 +477,15 @@ class KeyboardView(
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val i = e.actionIndex
                 val x = e.getX(i); val y = e.getY(i); val id = e.getPointerId(i)
+                if (y < toolbarH && (status != null || suggestions.isNotEmpty())) {
+                    val (l, r) = stripBounds()
+                    val idx = if (status != null) -2 else (((x - l) / ((r - l) / 3f)).toInt().coerceIn(0, 2))
+                    if (idx == -2 || suggestions.getOrNull(idx) != null) {
+                        pressedStrip = idx
+                        pointers.put(id, Ptr(id, null, null, x, y).also { it.strip = idx }); invalidate()
+                    }
+                    return true
+                }
                 val tool = toolAt(x, y)
                 if (tool != null) {
                     pressedTool = tool
@@ -410,7 +501,7 @@ class KeyboardView(
                 for (i in 0 until e.pointerCount) {
                     val p = pointers.get(e.getPointerId(i)) ?: continue
                     val x = e.getX(i); val y = e.getY(i)
-                    if (p.tool != null) continue
+                    if (p.tool != null || p.strip != -1) continue
                     if (p.longPressed && p.alts.isNotEmpty()) { updateSelection(p, x, y); invalidate(); continue }
                     val nk = keyAt(x, y)
                     if (nk !== p.key && !p.consumed && !p.longPressed) {
@@ -429,7 +520,10 @@ class KeyboardView(
                 if (p != null) {
                     pointers.remove(id)
                     p.repeating = false
-                    if (p.tool != null) {
+                    if (p.strip != -1) {
+                        pressedStrip = -1
+                        if (e.getY(i) < toolbarH) { if (p.strip == -2) listener?.onStatusTap() else listener?.onSuggestion(p.strip) }
+                    } else if (p.tool != null) {
                         pressedTool = null
                         if (toolAt(e.getX(i), e.getY(i)) == p.tool) listener?.onTool(p.tool)
                     } else {
@@ -458,6 +552,7 @@ class KeyboardView(
         handler.removeCallbacksAndMessages(null)
         pointers.clear()
         pressedTool = null
+        pressedStrip = -1
         invalidate()
     }
 
@@ -465,6 +560,11 @@ class KeyboardView(
 
     companion object {
         const val TOOLBAR_DP = 60f
+        /** Measured on the reference screenshot (key height 121 px): alef is 49 px tall, Arabic baseline at 88 px. */
+        const val ALEF_H = 49f / 121f
+        const val BASE_ARABIC = 88f / 121f
+        const val CAP_H = 0.36f
+        const val BASE_LATIN = 0.665f
         const val KEY_DP = 46.1f
         const val ROW_GAP_DP = 11.5f
         const val BOTTOM_PAD_DP = 14f
