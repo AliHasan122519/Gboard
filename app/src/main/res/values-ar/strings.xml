@@ -103,4 +103,7 @@
     <string name="update_available_title">يتوفر تحديث للوحة المفاتيح</string>
     <string name="update_available_text">الإصدار %s جاهز للتثبيت</string>
     <string name="menu_update">يتوفر تحديث %s</string>
+    <string name="update_dialog_title">يتوفر تحديث جديد</string>
+    <string name="update_now">تحديث الآن</string>
+    <string name="update_later">لاحقًا</string>
 </resources>

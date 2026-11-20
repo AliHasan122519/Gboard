@@ -66,9 +66,24 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume(); refreshStatus()
         pending = UpdateInfo.fromJson(prefs.availableUpdate)
-        if (pending != null && !busy) showAvailable(pending!!)
+        if (pending != null && !busy) { showAvailable(pending!!); promptUpdate(pending!!) }
         if (prefs.lastInstallError.isNotEmpty()) upStatus.text = getString(R.string.update_install_error, prefs.lastInstallError)
-        if (prefs.autoUpdate && !busy && System.currentTimeMillis() - prefs.lastUpdateCheck > 12L * 3600 * 1000) checkNow(false)
+        // every time the app is opened (at most once a minute): ask GitHub whether a newer release exists
+        if (prefs.autoUpdate && !busy && System.currentTimeMillis() - prefs.lastUpdateCheck > 60_000L) checkNow(false)
+    }
+
+    private var promptedFor: String? = null
+
+    /** The "new update available" dialog, shown once per version each time the app is opened. */
+    private fun promptUpdate(info: UpdateInfo) {
+        if (promptedFor == info.version || isFinishing || busy) return
+        promptedFor = info.version
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.update_dialog_title)
+            .setMessage(getString(R.string.update_available, info.version) + if (info.notes.isNotEmpty()) "\n\n" + info.notes else "")
+            .setPositiveButton(R.string.update_now) { _, _ -> installNow(info) }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
     }
 
     private fun dp(v: Float) = Ui.dpi(this, v)
@@ -192,7 +207,7 @@ class MainActivity : Activity() {
             main.post {
                 busy = false
                 when (r) {
-                    is CheckResult.Available -> showAvailable(r.info)
+                    is CheckResult.Available -> { showAvailable(r.info); promptUpdate(r.info) }
                     is CheckResult.UpToDate -> if (manual) upStatus.text = getString(R.string.update_up_to_date, updater.currentVersion)
                     is CheckResult.Failed -> if (manual) upStatus.text = getString(R.string.update_failed, r.reason)
                 }

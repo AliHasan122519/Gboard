@@ -103,4 +103,7 @@
     <string name="update_available_title">Keyboard update available</string>
     <string name="update_available_text">Version %s is ready to install</string>
     <string name="menu_update">Update %s available</string>
+    <string name="update_dialog_title">New update available</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Later</string>
 </resources>
