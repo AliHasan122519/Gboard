@@ -82,6 +82,19 @@ class TypingAssistTest {
         assertTrue(store.contains("zorbly"))
     }
 
+    @Test fun wordDeletion() {
+        fun left(before: String) = before.dropLast(KeyboardService.wordDeleteLength(before))
+        assertEquals("hello ", left("hello world"))
+        assertEquals("hello ", left("hello world  "))                 // trailing spaces go with the word
+        assertEquals("مرحبا ", left("مرحبا بالعالم"))
+        assertEquals("كتب ", left("كتب مَدرسَة"))                      // keeps diacritics attached to the word
+        assertEquals("what", left("what?!"))                           // a run of punctuation is its own step
+        assertEquals("don't ", left("don't stop"))
+        assertEquals("hi ", left("hi 😀😀"))                           // emoji run, surrogate pairs stay whole
+        assertEquals("", left("word"))
+        assertEquals(1, KeyboardService.wordDeleteLength(" "))
+    }
+
     @Test fun unicodeStyles() {
         val styles = TextStyle.load(File("src/main/assets/styles.json").readText())
         fun st(id: String) = styles.first { it.id == id }

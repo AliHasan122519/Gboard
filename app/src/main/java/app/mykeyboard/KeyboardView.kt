@@ -421,15 +421,19 @@ class KeyboardView(
         if (hasLongPress(k)) handler.postDelayed({ onLongPress(p.id) }, LONG_PRESS_MS)
     }
 
+    /**
+     * Hold-to-delete: after a short delay it repeats, speeding up (55 ms -> 32 ms per character); after about
+     * a second and a half of holding it removes a whole word per step. Stops the moment the finger lifts.
+     */
     private fun repeatRunnable(id: Int): Runnable = object : Runnable {
         var n = 0
         override fun run() {
             val p = pointers.get(id) ?: return
             if (!p.repeating) return
-            listener?.onKey(Action.BACKSPACE, "")
+            if (n >= WORD_AFTER) listener?.onLongAction(Action.BACKSPACE) else listener?.onKey(Action.BACKSPACE, "")
             if (prefs.haptic && n % 3 == 0) feedbackLight()
             n++
-            handler.postDelayed(this, if (n < 10) 60L else 32L)
+            handler.postDelayed(this, if (n >= WORD_AFTER) 120L else if (n < 8) 55L else 32L)
         }
     }
 
@@ -570,5 +574,6 @@ class KeyboardView(
         const val BOTTOM_PAD_DP = 14f
         const val LONG_PRESS_MS = 380L
         const val REPEAT_DELAY = 380L
+        const val WORD_AFTER = 30
     }
 }

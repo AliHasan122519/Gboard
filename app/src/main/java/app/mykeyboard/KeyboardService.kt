@@ -60,6 +60,10 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     private var lastBoundary = ""
     private var styleList: List<TextStyle>? = null
     private lateinit var voice: VoiceInput
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refreshTask = Runnable { refreshSuggestions() }
+    /** While deleting fast, suggestions are refreshed once the burst settles instead of on every character. */
+    private fun scheduleRefresh() { refreshHandler.removeCallbacks(refreshTask); refreshHandler.postDelayed(refreshTask, 60) }
 
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClipboard() }
 
@@ -216,7 +220,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
 
     override fun onUpdateSelection(oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
-        refreshSuggestions()
+        scheduleRefresh()
     }
 
     override fun onCurrentInputMethodSubtypeChanged(subtype: InputMethodSubtype) {
@@ -322,7 +326,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
                 page = Page.LETTERS; shift = Shift.OFF; updateAutoCap(); applyLayout()
             }
         }
-        refreshSuggestions()
+        if (action == Action.BACKSPACE) scheduleRefresh() else refreshSuggestions()
     }
 
     override fun onSuggestion(index: Int) {
@@ -342,6 +346,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
 
     override fun onLongAction(action: Action) {
         when (action) {
+            Action.BACKSPACE -> { deleteWord(); updateAutoCap(); applyLayout(); scheduleRefresh() }
             Action.SPACE, Action.LANG -> showImePicker()
             Action.COMMA -> openPanel(Tool.EMOJI)
             else -> {}
@@ -370,6 +375,16 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         val before = ic.getTextBeforeCursor(16, 0)
         if (before.isNullOrEmpty()) { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); return }
         ic.deleteSurroundingText(lastUnitLength(before.toString()), 0)
+    }
+
+    /** Hold-to-delete, second stage: removes the word before the cursor (or the selection). */
+    private fun deleteWord() {
+        val ic = currentInputConnection ?: return
+        lastCorrection = null
+        if (!ic.getSelectedText(0).isNullOrEmpty()) { ic.commitText("", 1); return }
+        val before = ic.getTextBeforeCursor(80, 0)?.toString() ?: ""
+        if (before.isEmpty()) { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); return }
+        ic.deleteSurroundingText(wordDeleteLength(before), 0)
     }
 
     override fun insert(text: String) { currentInputConnection?.commitText(text, 1) }
@@ -535,6 +550,20 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     }
 
     companion object {
+        private fun isWordPart(c: Char) = c.isLetterOrDigit() || c == '\'' || c == '’' || c == '_' || Character.getType(c) == Character.NON_SPACING_MARK.toInt()
+
+        /** How many UTF-16 units to remove to delete the word (or the run of symbols) before the cursor, with trailing spaces. */
+        fun wordDeleteLength(before: String): Int {
+            var i = before.length
+            while (i > 0 && before[i - 1].isWhitespace()) i--
+            if (i > 0) {
+                val word = isWordPart(before[i - 1])
+                while (i > 0 && !before[i - 1].isWhitespace() && isWordPart(before[i - 1]) == word) i--
+            }
+            if (i in 1 until before.length && Character.isLowSurrogate(before[i]) && Character.isHighSurrogate(before[i - 1])) i--
+            return (before.length - i).coerceAtLeast(1)
+        }
+
         const val FONT_LIST_VERSION = "font_list_version"
 
         /** Length (in UTF-16 units) of what one backspace should remove. Keeps Arabic marks and emoji sequences sane. */
