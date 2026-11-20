@@ -1,8 +1,8 @@
 {
- "versionName": "1.0.1",
- "versionCode": 2,
- "apkUrl": "https://raw.githubusercontent.com/AliHasan122519/Gboard/ccr-414a76f5-tfmtsf/update/MyKeyboard-2.apk",
- "sha256": "f810a9fd076111101817b2438177c32680c350542a6ea18d08bcf1f7bb553d35",
- "size": 13195156,
- "notes": "- الحذف السريع بالضغط المطوّل\n- تصحيح تلقائي واقتراحات وإملاء صوتي\n- الخط في الرسائل\n- قناة تحديث جديدة"
+ "versionName": "1.0.2",
+ "versionCode": 3,
+ "apkUrl": "https://raw.githubusercontent.com/AliHasan122519/Gboard/ccr-414a76f5-tfmtsf/update/MyKeyboard-3.apk",
+ "sha256": "ffd5888b61a02ce054a1dc2eb12e298950d11b5a54ef5daa631545d8c0038d05",
+ "size": 13197320,
+ "notes": "- شريط تحديث واضح أعلى التطبيق بزر «تحديث الآن»\n- التثبيت يكمل تلقائيًا بعد السماح مرة واحدة\n- تحسينات وإصلاحات"
 }

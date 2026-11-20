@@ -143,4 +143,6 @@
     <string name="pref_clear_learned">نسيان الكلمات المتعلَّمة</string>
     <string name="learned_cleared">تم حذف الكلمات المتعلَّمة</string>
     <string name="about_dict">قوائم الكلمات مشتقة من FrequencyWords للمطوّر Hermit Dave (OpenSubtitles) برخصة CC BY-SA 4.0. الكلمات المتعلَّمة تُحفظ على هذا الجهاز فقط. الإملاء الصوتي يرسل الصوت إلى خدمة التعرف على الكلام في الجهاز (غالبًا Google).</string>
+    <string name="update_banner_title">يتوفر إصدار جديد %s</string>
+    <string name="update_retry">إعادة المحاولة</string>
 </resources>

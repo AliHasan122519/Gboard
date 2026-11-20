@@ -41,6 +41,12 @@ class MainActivity : Activity() {
     private lateinit var upCheck: TextView
     private lateinit var upInstall: TextView
     private var pending: UpdateInfo? = null
+    private var awaitingInstallPermission = false
+    private lateinit var banner: LinearLayout
+    private lateinit var bannerTitle: TextView
+    private lateinit var bannerNotes: TextView
+    private lateinit var bannerBtn: TextView
+    private lateinit var bannerProgress: ProgressBar
     private var busy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +101,9 @@ class MainActivity : Activity() {
     private fun resumeWork() {
         runCatching { refreshStatus() }
         if (!::upStatus.isInitialized) return
+        if (awaitingInstallPermission && updater.canInstall()) {
+            UpdateInfo.fromJson(prefs.availableUpdate)?.let { awaitingInstallPermission = false; installNow(it); return }
+        }
         pending = UpdateInfo.fromJson(prefs.availableUpdate)
         if (pending != null && !busy) { showAvailable(pending!!); promptUpdate(pending!!) }
         if (prefs.lastInstallError.isNotEmpty()) upStatus.text = getString(R.string.update_install_error, prefs.lastInstallError)
@@ -142,6 +151,7 @@ class MainActivity : Activity() {
         head.addView(Ui.text(this, getString(R.string.app_name), 30f, p.label, Gravity.START).apply { setTypeface(typeface, Typeface.BOLD) })
         head.addView(Ui.text(this, getString(R.string.main_subtitle), 15f, p.hint, Gravity.START).apply { setPadding(0, dp(4f), 0, 0) })
         content.addView(head)
+        section("banner") { buildBanner() }
 
         buildErrorBanner()
         section("setup1") { card().also { c ->
@@ -202,6 +212,32 @@ class MainActivity : Activity() {
         content.addView(View(this), Ui.lp(1, dp(24f)))
     }
 
+    /** The big, impossible-to-miss "update available" strip at the top of the screen. */
+    private fun buildBanner() {
+        banner = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; visibility = View.GONE
+            background = Ui.round(p.accent, Ui.dp(this@MainActivity, 22f))
+            setPadding(dp(20f), dp(18f), dp(20f), dp(18f))
+        }
+        content.addView(banner, Ui.lp(Ui.MATCH, Ui.WRAP).apply { setMargins(dp(16f), dp(4f), dp(16f), dp(8f)) })
+        bannerTitle = Ui.text(this, "", 18f, p.onAccent, Gravity.START).apply { setTypeface(typeface, Typeface.BOLD) }
+        bannerNotes = Ui.text(this, "", 13f, p.onAccent, Gravity.START).apply { setPadding(0, dp(6f), 0, dp(2f)); setLineSpacing(0f, 1.15f); alpha = 0.85f }
+        bannerProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; visibility = View.GONE }
+        bannerBtn = Ui.pill(this, getString(R.string.update_now), p.onAccent, p.accent, 16f).apply { setTypeface(typeface, Typeface.BOLD) }
+        Ui.pressable(bannerBtn, { pending?.let { if (!busy) installNow(it) } })
+        banner.addView(bannerTitle); banner.addView(bannerNotes); banner.addView(bannerProgress, Ui.lp(Ui.MATCH, Ui.WRAP).apply { topMargin = dp(8f) })
+        banner.addView(bannerBtn, Ui.lp(Ui.MATCH, dp(46f)).apply { topMargin = dp(12f) })
+    }
+
+    private fun bannerStatus(text: String, showButton: Boolean, progress: Int = -1) {
+        if (!::banner.isInitialized) return
+        banner.visibility = View.VISIBLE
+        bannerTitle.text = text
+        bannerBtn.visibility = if (showButton) View.VISIBLE else View.GONE
+        bannerProgress.visibility = if (progress >= 0) View.VISIBLE else View.GONE
+        if (progress >= 0) bannerProgress.progress = progress
+    }
+
     private fun buildUpdateCard() {
         card().also { c ->
             title(c, getString(R.string.update_title))
@@ -234,6 +270,11 @@ class MainActivity : Activity() {
         upStatus.text = getString(R.string.update_available, info.version)
         upNotes.text = info.notes; upNotes.visibility = if (info.notes.isEmpty()) View.GONE else View.VISIBLE
         upInstall.visibility = View.VISIBLE
+        if (::banner.isInitialized) {
+            bannerNotes.text = info.notes; bannerNotes.visibility = if (info.notes.isEmpty()) View.GONE else View.VISIBLE
+            bannerBtn.text = getString(R.string.update_now)
+            bannerStatus(getString(R.string.update_banner_title, info.version), true)
+        }
     }
 
     private fun checkNow(manual: Boolean) {
@@ -245,7 +286,7 @@ class MainActivity : Activity() {
                 busy = false
                 when (r) {
                     is CheckResult.Available -> { showAvailable(r.info); promptUpdate(r.info) }
-                    is CheckResult.UpToDate -> if (manual) upStatus.text = getString(R.string.update_up_to_date, updater.currentVersion)
+                    is CheckResult.UpToDate -> { if (::banner.isInitialized) banner.visibility = View.GONE; if (manual) upStatus.text = getString(R.string.update_up_to_date, updater.currentVersion) }
                     is CheckResult.Failed -> if (manual) upStatus.text = getString(R.string.update_failed, r.reason)
                 }
             }
@@ -254,24 +295,40 @@ class MainActivity : Activity() {
 
     private fun installNow(info: UpdateInfo) {
         if (!updater.canInstall()) {
+            // Android asks the user once to let this app install updates; we continue automatically when they come back
+            awaitingInstallPermission = true
             upStatus.text = getString(R.string.update_allow_installs)
+            bannerStatus(getString(R.string.update_allow_installs), false)
             startActivity(updater.unknownSourcesIntent()); return
         }
+        awaitingInstallPermission = false
         busy = true; upInstall.visibility = View.GONE; upCheck.visibility = View.GONE
         upProgress.progress = 0; upProgress.visibility = View.VISIBLE
         upStatus.text = getString(R.string.update_downloading, 0)
+        bannerStatus(getString(R.string.update_downloading, 0), false, 0)
         prefs.lastInstallError = ""
         Thread {
             val r = updater.download(info) { done, total ->
-                if (total > 0) main.post { val pct = (done * 100 / total).toInt(); upProgress.progress = pct; upStatus.text = getString(R.string.update_downloading, pct) }
+                if (total > 0) main.post {
+                    val pct = (done * 100 / total).toInt()
+                    upProgress.progress = pct; upStatus.text = getString(R.string.update_downloading, pct)
+                    bannerStatus(getString(R.string.update_downloading, pct), false, pct)
+                }
             }
             main.post {
                 busy = false; upProgress.visibility = View.GONE; upCheck.visibility = View.VISIBLE
                 r.onSuccess { f ->
                     upStatus.text = getString(R.string.update_confirm)
-                    runCatching { updater.install(f) }.onFailure { upStatus.text = getString(R.string.update_install_error, it.message ?: it.javaClass.simpleName); upInstall.visibility = View.VISIBLE }
+                    bannerStatus(getString(R.string.update_confirm), false)
+                    runCatching { updater.install(f) }.onFailure {
+                        val m = getString(R.string.update_install_error, it.message ?: it.javaClass.simpleName)
+                        upStatus.text = m; upInstall.visibility = View.VISIBLE
+                        bannerStatus(m, true); bannerBtn.text = getString(R.string.update_retry)
+                    }
                 }.onFailure {
-                    upStatus.text = getString(R.string.update_download_failed, it.message ?: it.javaClass.simpleName); upInstall.visibility = View.VISIBLE
+                    val m = getString(R.string.update_download_failed, it.message ?: it.javaClass.simpleName)
+                    upStatus.text = m; upInstall.visibility = View.VISIBLE
+                    bannerStatus(m, true); bannerBtn.text = getString(R.string.update_retry)
                 }
             }
         }.start()

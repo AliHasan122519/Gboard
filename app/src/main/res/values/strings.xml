@@ -143,4 +143,6 @@
     <string name="pref_clear_learned">Forget learned words</string>
     <string name="learned_cleared">Learned words deleted</string>
     <string name="about_dict">Word lists derived from FrequencyWords by Hermit Dave (OpenSubtitles), licence CC BY-SA 4.0. Learned words are stored only on this device. Voice typing sends audio to the device speech service (usually Google).</string>
+    <string name="update_banner_title">New version %s is available</string>
+    <string name="update_retry">Try again</string>
 </resources>
