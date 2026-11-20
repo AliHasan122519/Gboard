@@ -4,7 +4,7 @@ enum class Action { TEXT, BACKSPACE, SHIFT, ENTER, SPACE, SYMBOLS, SYMBOLS2, LET
 enum class Style { NORMAL, FUNC, ACCENT }
 enum class Page { LETTERS, SYM1, SYM2 }
 enum class Shift { OFF, ON, LOCK }
-enum class EnterKind { ENTER, GO, SEARCH, SEND, NEXT, DONE }
+enum class EnterKind { ENTER, GO, SEARCH, SEND, NEXT, DONE, IMAGE }
 
 class Key(
     val action: Action = Action.TEXT,

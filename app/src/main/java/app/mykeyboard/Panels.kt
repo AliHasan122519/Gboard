@@ -26,6 +26,7 @@ interface PanelHost {
     fun toast(resId: Int)
     fun openStylePanel()
     fun sendTextAsImage()
+    fun shareTextAsImage()
     fun applyStyleToField()
     fun styleChanged()
 }
@@ -449,6 +450,9 @@ class StylePanel(
         ui.pressable(send, { host.sendTextAsImage() })
         row.addView(send, ui.lp(0, ui.WRAP, 1f))
         body.addView(row)
+        val share = ui.pill(c, c.getString(R.string.img_share), palette.funcKey, palette.funcLabel, 13f)
+        ui.pressable(share, { host.shareTextAsImage() })
+        body.addView(share, ui.lp(ui.WRAP, ui.WRAP))
 
         // --- 2. unicode styles (work as plain text everywhere)
         body.addView(label(c.getString(R.string.style_title), palette.label, 15f))

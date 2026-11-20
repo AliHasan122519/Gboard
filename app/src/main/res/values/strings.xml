@@ -148,4 +148,5 @@
     <string name="voice_prompt">Speak now</string>
     <string name="img_auto">Send as picture when I press Enter</string>
     <string name="img_auto_desc">The other person sees your message exactly in your font, as a picture. Works in apps that accept images from the keyboard.</string>
+    <string name="img_share">Share image to this app…</string>
 </resources>

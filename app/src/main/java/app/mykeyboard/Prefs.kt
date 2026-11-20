@@ -95,7 +95,7 @@ class Prefs(context: Context) {
 
     /** When on, Enter in an app that accepts images sends the message as a picture drawn in the chosen font. */
     open var imageSend: Boolean
-        get() = sp.getBoolean(K_IMAGE_SEND, false)
+        get() = sp.getBoolean(K_IMAGE_SEND, true)
         set(v) = sp.edit().putBoolean(K_IMAGE_SEND, v).apply()
 
     var clipboardHistory: Boolean

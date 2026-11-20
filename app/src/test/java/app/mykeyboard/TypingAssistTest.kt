@@ -95,6 +95,14 @@ class TypingAssistTest {
         assertEquals(1, KeyboardService.wordDeleteLength(" "))
     }
 
+    @Test fun imageTypeFollowsWhatTheAppAccepts() {
+        assertEquals("image/png", TextImage.chooseMime(arrayOf("image/gif", "image/png", "image/webp")))
+        assertEquals("image/webp", TextImage.chooseMime(arrayOf("image/gif", "image/webp")))
+        assertEquals("image/jpeg", TextImage.chooseMime(arrayOf("image/jpeg")))
+        assertEquals("image/png", TextImage.chooseMime(arrayOf("image/*")))
+        assertNull(TextImage.chooseMime(arrayOf("image/gif", "text/plain"))); assertNull(TextImage.chooseMime(null))
+    }
+
     @Test fun unicodeStyles() {
         val styles = TextStyle.load(File("src/main/assets/styles.json").readText())
         fun st(id: String) = styles.first { it.id == id }

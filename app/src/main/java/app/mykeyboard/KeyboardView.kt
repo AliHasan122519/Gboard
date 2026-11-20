@@ -283,7 +283,7 @@ class KeyboardView(
                 c,
                 when (state.enter) {
                     EnterKind.ENTER -> Icon.ENTER; EnterKind.SEARCH -> Icon.SEARCH; EnterKind.SEND -> Icon.SEND
-                    EnterKind.DONE -> Icon.CHECK; EnterKind.GO, EnterKind.NEXT -> Icon.ARROW_NEXT
+                    EnterKind.DONE -> Icon.CHECK; EnterKind.GO, EnterKind.NEXT -> Icon.ARROW_NEXT; EnterKind.IMAGE -> Icon.IMAGE
                 },
                 cx, cy, k.h * 0.42f, labelColor, rtl = state.lang == "ar",
             )
@@ -439,7 +439,8 @@ class KeyboardView(
     }
 
     private fun hasLongPress(k: Key) = k.alts.isNotEmpty() ||
-        k.action == Action.SPACE || k.action == Action.LANG || k.action == Action.COMMA
+        k.action == Action.SPACE || k.action == Action.LANG || k.action == Action.COMMA ||
+        (k.action == Action.ENTER && state.enter == EnterKind.IMAGE)
 
     private fun startPress(p: Ptr) {
         val k = p.key ?: return
@@ -480,7 +481,7 @@ class KeyboardView(
         val k = p.key ?: return
         if (p.longPressed || p.consumed) return
         when (k.action) {
-            Action.SPACE, Action.LANG, Action.COMMA -> {
+            Action.SPACE, Action.LANG, Action.COMMA, Action.ENTER -> {
                 p.longPressed = true; p.consumed = true
                 feedbackLight(); listener?.onLongAction(k.action); invalidate(); return
             }

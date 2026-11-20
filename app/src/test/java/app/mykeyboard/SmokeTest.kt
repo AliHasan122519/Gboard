@@ -35,7 +35,7 @@ class SmokeTest {
             override fun closePanel() {}; override fun insert(text: String) {}; override fun backspace() {}
             override fun openFontImport() {}; override fun openSettings() {}; override fun openPanel(tool: Tool) {}
             override fun cycleTheme() {}; override fun showImePicker() {}; override fun fontChanged() {}; override fun toast(resId: Int) {}
-            override fun openStylePanel() {}; override fun sendTextAsImage() {}; override fun applyStyleToField() {}; override fun styleChanged() {}
+            override fun openStylePanel() {}; override fun sendTextAsImage() {}; override fun shareTextAsImage() {}; override fun applyStyleToField() {}; override fun styleChanged() {}
         }
         FontPanel(ctx, Palette.DARK, prefs, fonts, host)
         EmojiPanel(ctx, Palette.DARK, prefs, host)

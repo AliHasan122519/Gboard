@@ -148,4 +148,5 @@
     <string name="voice_prompt">تحدّث الآن</string>
     <string name="img_auto">إرسال كصورة عند ضغط Enter</string>
     <string name="img_auto_desc">يرى الطرف الآخر رسالتك بخطك تمامًا، لكن كصورة. يعمل في التطبيقات التي تقبل الصور من لوحة المفاتيح.</string>
+    <string name="img_share">مشاركة الصورة مع هذا التطبيق…</string>
 </resources>

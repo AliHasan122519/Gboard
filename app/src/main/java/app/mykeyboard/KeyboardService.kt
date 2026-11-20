@@ -61,6 +61,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     private var styleList: List<TextStyle>? = null
     private var pendingVoice: String? = null
     private var imageCapable = false
+    private var lastInfo: EditorInfo? = null
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshTask = Runnable { refreshSuggestions() }
     /** While deleting fast, suggestions are refreshed once the burst settles instead of on every character. */
@@ -156,6 +157,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
             Prefs.K_DIGITS -> applyLayout()
             Prefs.K_VOICE_TS -> { pendingVoice = prefs.sp.getString(Prefs.K_VOICE_TEXT, null); commitPendingVoice() }
             Prefs.K_SUGGEST, Prefs.K_AUTOCORRECT, Prefs.K_STYLE -> refreshSuggestions()
+            Prefs.K_IMAGE_SEND -> { enterKind = if (prefs.imageSend && imageCapable && !passwordField) EnterKind.IMAGE else if (enterKind == EnterKind.IMAGE) EnterKind.ENTER else enterKind; applyLayout() }
             FONT_LIST_VERSION -> fontPanel?.refresh()
         }
     }
@@ -201,8 +203,9 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         }
         suggestOk = !(passwordField || latinOnlyField || numeric || info.inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0)
         lastCorrection = null
-        imageCapable = info.contentMimeTypes?.any { it == "image/png" || it == "image/*" } == true
-        if (prefs.imageSend && imageCapable) enterKind = EnterKind.SEND          // the send key shows it will send a picture
+        lastInfo = info
+        imageCapable = TextImage.chooseMime(info.contentMimeTypes) != null
+        if (prefs.imageSend && imageCapable && !passwordField) enterKind = EnterKind.IMAGE        // the Enter key shows a picture icon: it sends the message as an image
         updateAutoCap()
         applyLayout()
         refreshSuggestions()
@@ -356,6 +359,7 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
     override fun onLongAction(action: Action) {
         when (action) {
             Action.BACKSPACE -> { deleteWord(); scheduleSettle() }
+            Action.ENTER -> sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)          // long-press Enter = a real new line
             Action.SPACE, Action.LANG -> showImePicker()
             Action.COMMA -> openPanel(Tool.EMOJI)
             else -> {}
@@ -372,7 +376,10 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
 
     private fun sendEnter() {
         val ic = currentInputConnection ?: return
-        if (prefs.imageSend && imageCapable) { sendTextAsImage(); return }
+        if (enterKind == EnterKind.IMAGE) {
+            if (fullFieldText(ic).isBlank()) sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER) else sendTextAsImage()
+            return
+        }
         if (enterKind == EnterKind.ENTER) { sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER); return }
         val action = currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
         ic.performEditorAction(action)
@@ -525,22 +532,37 @@ class KeyboardService : InputMethodService(), KeyboardListener, PanelHost, Share
         if (text.isBlank()) { toast(R.string.img_empty); return }
         try {
             val tf = fonts.typeface(fonts.find(prefs.fontId), prefs.fontWeight)
-            val file = TextImage.render(this, text, tf, TextImage.PRESETS[prefs.imagePreset])
+            val mime = TextImage.chooseMime((lastInfo ?: currentInputEditorInfo)?.contentMimeTypes)
+            val file = TextImage.render(this, text, tf, TextImage.PRESETS[prefs.imagePreset], mime = mime ?: "image/png")
             val uri = TextImage.uriFor(this, file)
-            val types = currentInputEditorInfo?.contentMimeTypes
-            val accepts = types?.any { it == "image/png" || it == "image/*" || it == "image/gif" } == true
-            val sent = accepts && ic.commitContent(
-                InputContentInfo(uri, ClipDescription("message", arrayOf("image/png"))),
+            val sent = mime != null && ic.commitContent(
+                InputContentInfo(uri, ClipDescription("message", arrayOf(mime))),
                 InputConnection.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null,
             )
             if (sent) { clearField(ic); closePanel(); toast(R.string.img_sent) }
             else {
+                // the app does not take images from keyboards: copy the picture so it can be pasted, and offer the app's share screen
                 (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newUri(contentResolver, "message", uri))
                 toast(R.string.img_copied)
             }
         } catch (t: Throwable) {
             CrashReporter.record(this, "KeyboardService.sendTextAsImage", t); toast(R.string.img_failed)
         }
+    }
+
+    /** Opens the current app's own share screen with the rendered picture (works where keyboards cannot insert images). */
+    override fun shareTextAsImage() {
+        val ic = currentInputConnection ?: return
+        val text = fullFieldText(ic)
+        if (text.isBlank()) { toast(R.string.img_empty); return }
+        try {
+            val tf = fonts.typeface(fonts.find(prefs.fontId), prefs.fontWeight)
+            val file = TextImage.render(this, text, tf, TextImage.PRESETS[prefs.imagePreset])
+            val send = Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, TextImage.uriFor(this, file))
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            (lastInfo ?: currentInputEditorInfo)?.packageName?.takeIf { it.isNotEmpty() && it != packageName }?.let { send.setPackage(it) }
+            startActivity(send)
+        } catch (t: Throwable) { CrashReporter.record(this, "KeyboardService.shareTextAsImage", t); toast(R.string.img_failed) }
     }
 
     override fun openStylePanel() {

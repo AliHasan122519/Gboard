@@ -14,8 +14,8 @@ android {
         applicationId = "app.mykeyboard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
     }
 
     // Release signing: put keystore.properties next to settings.gradle.kts (see tools/make-keystore.sh). It is git-ignored.

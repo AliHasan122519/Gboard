@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 
 /** Drives the real keyboard service with a real text field: this is what exposed the "delete stops after 2 characters" bug. */
 @RunWith(RobolectricTestRunner::class)
+@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h900dp-xxhdpi")
 class ServiceFlowTest {
     private class Rig(val service: KeyboardService, val kv: KeyboardView, val field: EditText) {
@@ -32,7 +33,7 @@ class ServiceFlowTest {
         fun tap(k: Key) { val t = SystemClock.uptimeMillis(); send(MotionEvent.ACTION_DOWN, t, 0, k); send(MotionEvent.ACTION_UP, t, 60, k); ShadowLooper.idleMainLooper(120, TimeUnit.MILLISECONDS) }
     }
 
-    private fun boot(initial: String, lang: String = "ar"): Rig {
+    private fun boot(initial: String, lang: String = "ar", mimes: Array<String>? = null, committed: MutableList<android.view.inputmethod.InputContentInfo>? = null): Rig {
         val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
         Prefs(ctx).lang = lang
         val s = Robolectric.buildService(KeyboardService::class.java).create().get()
@@ -40,8 +41,11 @@ class ServiceFlowTest {
         root.measure(View.MeasureSpec.makeMeasureSpec(1233, View.MeasureSpec.EXACTLY), View.MeasureSpec.UNSPECIFIED)
         root.layout(0, 0, root.measuredWidth, root.measuredHeight)
         val field = EditText(ctx).apply { setText(initial); setSelection(initial.length) }
-        InputMethodService::class.java.getDeclaredField("mStartedInputConnection").apply { isAccessible = true }.set(s, object : BaseInputConnection(field, true) { override fun getEditable() = field.editableText })
-        s.onStartInputView(EditorInfo().apply { inputType = InputType.TYPE_CLASS_TEXT }, false)
+        InputMethodService::class.java.getDeclaredField("mStartedInputConnection").apply { isAccessible = true }.set(s, object : BaseInputConnection(field, true) {
+            override fun getEditable() = field.editableText
+            override fun commitContent(info: android.view.inputmethod.InputContentInfo, flags: Int, opts: android.os.Bundle?): Boolean { committed?.add(info); return committed != null }
+        })
+        s.onStartInputView(EditorInfo().apply { inputType = InputType.TYPE_CLASS_TEXT; contentMimeTypes = mimes }, false)
         val kv = root.getChildAt(0) as KeyboardView
         kv.measure(View.MeasureSpec.makeMeasureSpec(1233, View.MeasureSpec.EXACTLY), View.MeasureSpec.UNSPECIFIED)
         kv.layout(0, 0, kv.measuredWidth, kv.measuredHeight)
@@ -115,5 +119,26 @@ class ServiceFlowTest {
         assertEquals("teh", r.field.text.toString())                       // one backspace undoes the correction
         r.service.onKey(Action.SPACE, "")
         assertEquals("teh ", r.field.text.toString())                      // and it is not corrected again
+    }
+
+    @Test fun enterSendsTheMessageAsAnImageInYourFont() {
+        val sent = ArrayList<android.view.inputmethod.InputContentInfo>()
+        val r = boot("السلام عليكم", mimes = arrayOf("image/gif", "image/png"), committed = sent)
+        val enter = r.key(3, Action.ENTER)
+        r.tap(enter)
+        assertEquals("one picture was handed to the app", 1, sent.size)
+        assertEquals("image/png", sent[0].description.getMimeType(0))
+        assertEquals("app.mykeyboard.stickers", sent[0].contentUri.authority)
+        assertEquals("the field is emptied after sending", "", r.field.text.toString())
+    }
+
+    @Test fun enterOnEmptyFieldIsAnOrdinaryNewLineAndAppsWithoutImagesAreUntouched() {
+        val sent = ArrayList<android.view.inputmethod.InputContentInfo>()
+        val r = boot("", mimes = arrayOf("image/png"), committed = sent)
+        r.tap(r.key(3, Action.ENTER))
+        assertEquals(0, sent.size)                                          // nothing to send
+        val r2 = boot("hello", mimes = null)                                // no image support: normal Enter
+        r2.tap(r2.key(3, Action.ENTER))
+        assertEquals("hello", r2.field.text.toString())
     }
 }

@@ -1,8 +1,8 @@
 {
- "versionName": "1.0.3",
- "versionCode": 4,
- "apkUrl": "https://raw.githubusercontent.com/AliHasan122519/Gboard/ccr-414a76f5-tfmtsf/update/MyKeyboard-4.apk",
- "sha256": "e65769d1ce0707c7492de066cd0c48c153f5a074754c9df97a6e200f6ed24e72",
- "size": 13197616,
- "notes": "- أبعاد اللوحة مطابقة للصورة المرجعية على كل الهواتف\n- لا تداخل بين الحروف، وخط افتراضي أقرب للمرجع\n- الحذف المستمر يعمل ولا يتوقف\n- الإملاء الصوتي عبر نافذة الصوت في الهاتف\n- إرسال الرسالة كصورة بخطك تلقائيًا"
+ "versionName": "1.0.4",
+ "versionCode": 5,
+ "apkUrl": "https://raw.githubusercontent.com/AliHasan122519/Gboard/ccr-414a76f5-tfmtsf/update/MyKeyboard-5.apk",
+ "sha256": "3c22cc4d07764c0e295ac702a0a8a16ec946d98e63d66f5b4cb11c4c4c535b83",
+ "size": 13199180,
+ "notes": "- زر Enter يرسل رسالتك كصورة بخطك (أيقونة صورة) في التطبيقات التي تقبل الصور\n- ضغطة مطولة على Enter = سطر جديد\n- توافق أوسع مع واتساب (PNG وWebP وJPEG) وزر مشاركة الصورة"
 }

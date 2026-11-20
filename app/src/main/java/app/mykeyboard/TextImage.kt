@@ -31,7 +31,16 @@ object TextImage {
 
     fun dir(ctx: Context) = File(ctx.cacheDir, "stickers").also { it.mkdirs() }
 
-    fun render(ctx: Context, text: String, tf: Typeface, preset: Preset, width: Int = 900): File {
+    /** Picks the image type the target app accepts from the keyboard (PNG preferred). null = the app takes no images. */
+    fun chooseMime(types: Array<String>?): String? {
+        if (types == null) return null
+        fun ok(m: String) = types.any { it == m || it == "image/*" }
+        return listOf("image/png", "image/webp", "image/jpeg").firstOrNull { ok(it) }
+    }
+
+    fun extFor(mime: String) = when (mime) { "image/jpeg" -> "jpg"; "image/webp" -> "webp"; else -> "png" }
+
+    fun render(ctx: Context, text: String, tf: Typeface, preset: Preset, width: Int = 900, mime: String = "image/png"): File {
         val pad = 56f
         val body = text.trim().take(1500)
         var size = 68f
@@ -49,13 +58,19 @@ object TextImage {
         val bmp = Bitmap.createBitmap(width, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = preset.bg }
-        c.drawRoundRect(RectF(0f, 0f, width.toFloat(), h.toFloat()), 56f, 56f, bgPaint)
+        val radius = if (mime == "image/png") 56f else 0f          // JPEG has no transparency: square corners there
+        c.drawRoundRect(RectF(0f, 0f, width.toFloat(), h.toFloat()), radius, radius, bgPaint)
         c.translate(pad, pad)
         layout.draw(c)
         // keep the cache small: drop old images
         dir(ctx).listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 24L * 3600 * 1000 }?.forEach { it.delete() }
-        val f = File(dir(ctx), "message-${System.currentTimeMillis()}.png")
-        f.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val f = File(dir(ctx), "message-${System.currentTimeMillis()}.${extFor(mime)}")
+        val fmt = when (mime) {
+            "image/jpeg" -> Bitmap.CompressFormat.JPEG
+            "image/webp" -> if (android.os.Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSLESS else @Suppress("DEPRECATION") Bitmap.CompressFormat.WEBP
+            else -> Bitmap.CompressFormat.PNG
+        }
+        f.outputStream().use { bmp.compress(fmt, 95, it) }
         bmp.recycle()
         return f
     }
@@ -67,13 +82,13 @@ object TextImage {
 class StickerProvider : ContentProvider() {
     private fun fileFor(uri: Uri): File? {
         val name = uri.lastPathSegment ?: return null
-        if (!Regex("[A-Za-z0-9._-]+\\.png").matches(name)) return null
+        if (!Regex("[A-Za-z0-9._-]+\\.(png|jpg|webp)").matches(name)) return null
         val f = File(TextImage.dir(context!!), name)
         return if (f.isFile) f else null
     }
 
     override fun onCreate() = true
-    override fun getType(uri: Uri) = "image/png"
+    override fun getType(uri: Uri) = when (uri.lastPathSegment?.substringAfterLast('.')) { "jpg" -> "image/jpeg"; "webp" -> "image/webp"; else -> "image/png" }
     override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? {
         val f = fileFor(uri) ?: return null
         return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)).apply { addRow(arrayOf(f.name, f.length())) }

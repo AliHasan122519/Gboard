@@ -9,7 +9,7 @@ import kotlin.math.sin
 
 enum class Icon {
     MIC, GEAR, PALETTE, CLIPBOARD, STICKER, GRID, GLOBE, BACKSPACE, SHIFT, SHIFT_FILLED, SHIFT_LOCK,
-    ENTER, SEARCH, SEND, CHECK, ARROW_NEXT, SMILEY, BACK, CLOSE, PLUS, PIN, KEYBOARD, MOON, TRASH, ARROW_BACK_LABEL, STAR, STAR_FILLED
+    ENTER, SEARCH, SEND, CHECK, ARROW_NEXT, SMILEY, BACK, CLOSE, PLUS, PIN, KEYBOARD, MOON, TRASH, ARROW_BACK_LABEL, STAR, STAR_FILLED, IMAGE
 }
 
 /** Vector icons drawn directly on a Canvas, original geometry in a unit square centred on (cx, cy). */
@@ -221,6 +221,17 @@ object Icons {
                 c.drawPath(path, paint)
             }
             Icon.ARROW_BACK_LABEL -> {}
+            Icon.IMAGE -> {
+                stroke(sw * 1.1f, color)
+                rect.set(-0.44f * s, -0.34f * s, 0.44f * s, 0.34f * s)
+                c.drawRoundRect(rect, 0.10f * s, 0.10f * s, paint)
+                fill(color)
+                c.drawCircle(-0.20f * s, -0.12f * s, 0.07f * s, paint)
+                path.reset()
+                path.moveTo(-0.40f * s, 0.30f * s); path.lineTo(-0.10f * s, 0.02f * s); path.lineTo(0.08f * s, 0.18f * s)
+                path.lineTo(0.22f * s, 0.04f * s); path.lineTo(0.40f * s, 0.30f * s); path.close()
+                c.drawPath(path, paint)
+            }
             Icon.STAR, Icon.STAR_FILLED -> {
                 path.reset()
                 for (i in 0 until 10) {
